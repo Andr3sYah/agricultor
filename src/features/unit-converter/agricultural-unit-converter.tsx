@@ -107,9 +107,6 @@ export function AgriculturalUnitConverter() {
           >
             {convertingBags ? "Cantidad de bultos" : "Cantidad"}
           </label>
-          <p className="mt-1 text-sm text-slate-600" id="unit-converter-hint">
-            Se aceptan decimales con punto o coma. El cero es válido.
-          </p>
           <input
             aria-describedby={`unit-converter-hint${error ? ` ${amountErrorId}` : ""}`}
             aria-invalid={Boolean(error)}
@@ -124,6 +121,9 @@ export function AgriculturalUnitConverter() {
             type="text"
             value={amount}
           />
+          <p className="mt-1 text-sm text-slate-600" id="unit-converter-hint">
+            Se aceptan decimales con punto o coma. El cero es válido.
+          </p>
           {error && (
             <p
               className="mt-1 text-sm font-medium text-rose-800"
@@ -272,28 +272,30 @@ export function AgriculturalUnitConverter() {
         </div>
       )}
 
-      {!convertingBags && (
-        <button
-          className="min-h-11 rounded-xl border border-emerald-800 px-4 font-semibold text-emerald-900 hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-emerald-800"
-          onClick={() => {
-            setFromUnit(toUnit);
-            setToUnit(fromUnit);
-            setPrice("");
-            setPriceUnitKey(null);
-            resetResult();
-          }}
-          type="button"
-        >
-          Intercambiar unidades
-        </button>
-      )}
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+        {!convertingBags && (
+          <button
+            className="min-h-11 w-full rounded-xl border border-emerald-800 px-4 font-semibold text-emerald-900 hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-emerald-800 sm:w-auto"
+            onClick={() => {
+              setFromUnit(toUnit);
+              setToUnit(fromUnit);
+              setPrice("");
+              setPriceUnitKey(null);
+              resetResult();
+            }}
+            type="button"
+          >
+            Intercambiar unidades
+          </button>
+        )}
 
-      <button
-        className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 sm:w-auto"
-        type="submit"
-      >
-        Convertir unidades
-      </button>
+        <button
+          className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 sm:w-auto"
+          type="submit"
+        >
+          Convertir unidades
+        </button>
+      </div>
 
       {convertedValue !== null && (
         <section

@@ -130,12 +130,9 @@ export function AgriculturalCostCalculator() {
 
     return (
       <div>
-        <label className="block font-medium text-slate-900" htmlFor={inputId}>
+        <label className="block font-medium text-slate-900 sm:min-h-12" htmlFor={inputId}>
           {label}
         </label>
-        <p className="mt-1 text-sm text-slate-600" id={`${inputId}-hint`}>
-          {hint}
-        </p>
         <div className="mt-2 flex min-h-12 overflow-hidden rounded-xl border border-slate-300 bg-white focus-within:ring-2 focus-within:ring-emerald-800">
           <span
             aria-hidden="true"
@@ -155,6 +152,9 @@ export function AgriculturalCostCalculator() {
             value={values[field]}
           />
         </div>
+        <p className="mt-1 text-sm text-slate-600" id={`${inputId}-hint`}>
+          {hint}
+        </p>
         {error && (
           <p className="mt-1 text-sm font-medium text-rose-800" id={errorId}>
             {error}
