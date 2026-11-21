@@ -272,9 +272,19 @@ async function main(): Promise<void> {
     const producerVerification = await waitForAccountEmail(brevoStub.messages, producerEmail, "/verify-email?");
     const producerVerificationUrl = producerVerification.textContent.match(/https?:\/\/\S+/)?.[0];
     assert.ok(producerVerificationUrl);
-    assert.ok((await producerApi.get(producerVerificationUrl)).ok());
+    const producerVerificationResponse = await producerApi.get(
+      producerVerificationUrl,
+    );
+    assert.ok(
+      producerVerificationResponse.ok(),
+      `Producer verification failed: ${await producerVerificationResponse.text()}`,
+    );
     const producerSession = await producerApi.get("/api/auth/get-session");
-    assert.equal(producerSession.ok(), true);
+    assert.equal(
+      producerSession.status(),
+      200,
+      `Producer session lookup failed: ${await producerSession.text()}`,
+    );
     const producerSessionData = await producerSession.json();
     assert.ok(
       producerSessionData,
