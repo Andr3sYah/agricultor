@@ -1,6 +1,14 @@
 import Link from "next/link";
 
-export function SiteHeader({ authenticated }: { authenticated: boolean }) {
+export function SiteHeader({
+  authenticated,
+  displayName,
+}: {
+  authenticated: boolean;
+  displayName?: string | null;
+}) {
+  const accountLabel = displayName?.trim() || "Mi cuenta";
+
   return (
     <header className="flex min-h-20 items-center justify-between gap-4 border-b border-[#b7ab96]">
       <Link
@@ -11,11 +19,11 @@ export function SiteHeader({ authenticated }: { authenticated: boolean }) {
         Agricultor
       </Link>
       <Link
-        aria-label={authenticated ? "Sesión iniciada. Ir a mi cuenta" : undefined}
+        aria-label={authenticated ? `Ir a la cuenta de ${accountLabel}` : undefined}
         className="inline-flex min-h-12 items-center px-2 text-right text-sm font-bold underline decoration-[#91612e] underline-offset-4 sm:text-base"
         href={authenticated ? "/mi-cuenta" : "/iniciar-sesion"}
       >
-        {authenticated ? "Sesión iniciada · Mi cuenta" : "Inicia sesión"}
+        {authenticated ? accountLabel : "Inicia sesión"}
       </Link>
     </header>
   );

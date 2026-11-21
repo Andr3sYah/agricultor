@@ -11,11 +11,15 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   const session = await getCurrentSession();
+  const displayName = session?.user.name?.trim() || null;
 
   return (
     <main className="min-h-screen bg-[#f8f1e4] text-[#253528]">
       <div className="mx-auto max-w-7xl px-5 pb-8 sm:px-9">
-        <SiteHeader authenticated={Boolean(session)} />
+        <SiteHeader
+          authenticated={Boolean(session)}
+          displayName={displayName}
+        />
 
         <section aria-labelledby="welcome-title" className="grid items-center gap-8 py-8 sm:py-12 lg:grid-cols-[1fr_1.04fr] lg:gap-14">
           <div>
@@ -32,12 +36,14 @@ export default async function Home() {
               >
                 Explorar el catálogo
               </Link>
-              <Link
-                className="inline-flex min-h-12 items-center rounded-md bg-[#edc574] px-5 py-3 font-bold text-[#322714] hover:bg-[#e4b65b]"
-                href="/crear-cuenta"
-              >
-                Crear cuenta
-              </Link>
+              {!session && (
+                <Link
+                  className="inline-flex min-h-12 items-center rounded-md bg-[#edc574] px-5 py-3 font-bold text-[#322714] hover:bg-[#e4b65b]"
+                  href="/crear-cuenta"
+                >
+                  Crear cuenta
+                </Link>
+              )}
             </div>
           </div>
 
