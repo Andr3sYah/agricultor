@@ -257,6 +257,7 @@ test("Google sign-in is available with safe account linking and clear password r
   assert.match(authConfig, /process\.env\.OAUTH_CLIENT_ID/);
   assert.match(authConfig, /process\.env\.OAUTH_CLIENT_SECRET/);
   assert.match(authConfig, /autoSignIn: true/);
+  assert.match(authConfig, /autoSignInAfterVerification: true/);
   assert.match(authConfig, /requireEmailVerification: true/);
   assert.match(
     authConfig,
