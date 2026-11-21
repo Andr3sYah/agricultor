@@ -4,6 +4,11 @@ type PasswordResetEmail = {
   url: string;
 };
 
+type ProblemReportEmail = {
+  title: string;
+  description: string;
+};
+
 type BrevoEmailDependencies = {
   apiKey?: string;
   senderEmail?: string;
@@ -116,4 +121,47 @@ export function sendPasswordResetEmail(email: PasswordResetEmail, dependencies: 
 
 export function sendVerificationEmail(email: PasswordResetEmail, dependencies: BrevoEmailDependencies = {}) {
   return sendAccountEmail(email, dependencies, "verify");
+}
+
+export async function sendProblemReportEmail(
+  report: ProblemReportEmail,
+  dependencies: BrevoEmailDependencies = {},
+): Promise<void> {
+  const apiKey = dependencies.apiKey ?? process.env.API_KEY_BREVO;
+  const senderEmail = dependencies.senderEmail ?? process.env.BREVO_SENDER_EMAIL;
+
+  if (!apiKey) {
+    throw new Error("API_KEY_BREVO debe estar configurada para enviar correos.");
+  }
+  if (!senderEmail) {
+    throw new Error(
+      "BREVO_SENDER_EMAIL debe estar configurada para enviar correos.",
+    );
+  }
+
+  const subject = report.title.replace(/[\r\n]+/g, " ").trim();
+  const safeTitle = escapeHtml(report.title);
+  const safeDescription = escapeHtml(report.description).replace(/\n/g, "<br>");
+  const response = await (dependencies.fetcher ?? fetch)(getBrevoApiUrl(), {
+    method: "POST",
+    headers: {
+      "api-key": apiKey,
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    signal: AbortSignal.timeout(10_000),
+    body: JSON.stringify({
+      sender: { email: senderEmail, name: "Agricultor" },
+      to: [{ email: "andresdario.2001@gmail.com" }],
+      subject: `[Agricultor] Reporte: ${subject}`,
+      htmlContent: `<h1>${safeTitle}</h1><p>${safeDescription}</p>`,
+      textContent: `${report.title}\n\n${report.description}`,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Brevo rechazó el reporte de problema (HTTP ${response.status}).`,
+    );
+  }
 }
