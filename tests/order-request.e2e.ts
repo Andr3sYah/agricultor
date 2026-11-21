@@ -291,7 +291,9 @@ async function main(): Promise<void> {
       "Email verification should establish a producer session.",
     );
     assert.equal(producerSessionData.user.email, producerEmail);
-    const producerSignout = await producerApi.post("/api/auth/sign-out");
+    const producerSignout = await producerApi.post("/api/auth/sign-out", {
+      data: {},
+    });
     assert.equal(
       producerSignout.status(),
       200,
