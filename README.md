@@ -24,8 +24,11 @@ La aplicación local se sirve en `http://localhost:3000`.
 - `DATABASE_URL`: conexión PostgreSQL de Neon. La aplicación usa el adaptador
   serverless de Neon; configura la URL de conexión agrupada que entrega Neon.
 - `API_KEY_BREVO` y `BREVO_SENDER_EMAIL`: clave y dirección remitente
-  verificada en Brevo. Se usan para confirmar el correo y recuperar la
-  contraseña. El build puede ejecutarse sin estas credenciales.
+  verificada en Brevo. Se usan para confirmar el correo, recuperar la
+  contraseña y recibir por correo los reportes enviados desde «Reportar un
+  problema». Los reportes llegan a `andresdario.2001@gmail.com`. El build puede
+  ejecutarse sin estas credenciales; para recibir reportes en Vercel, configura
+  estas mismas dos variables y usa una dirección remitente verificada en Brevo.
 - El registro no requiere confirmación por correo. Después de registrarte,
   inicia sesión; si el correo era nuevo, la cuenta ya quedó creada.
 - En Vercel, Better Auth usa los dominios de implementación que entrega el
@@ -48,6 +51,10 @@ y `COUDINARY_API_KEY` parece tener una errata; no se debe configurar ni usar
 hasta implementar esa integración con el nombre correcto `CLOUDINARY_API_KEY`.
 `.env.example` enumera las variables aplicables sin valores. No se puede
 comprobar desde el repositorio cuáles variables están guardadas en Vercel.
+
+El formulario público de reportes aplica una trampa honeypot, valida el origen y
+el tamaño del mensaje, y limita cada dirección IP a tres envíos cada diez
+minutos por instancia de servidor.
 
 El esquema y sus migraciones están versionados, pero no se aplican
 automáticamente. Antes de desplegar una migración, verifica que `DATABASE_URL`
