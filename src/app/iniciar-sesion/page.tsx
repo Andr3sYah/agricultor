@@ -10,6 +10,9 @@ export default async function SignInPage({
   const params = await searchParams;
   const redirectTo = getOrderRequestRedirect(params.redirectTo);
   const producerIntent = params.intent === "producer";
+  const googleAuthEnabled = Boolean(
+    process.env.OAUTH_CLIENT_ID && process.env.OAUTH_CLIENT_SECRET,
+  );
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-xl items-center px-4 py-8 sm:px-6 sm:py-12">
@@ -30,9 +33,12 @@ export default async function SignInPage({
               El enlace de confirmación venció o es inválido. Puedes pedir otro abajo.
             </p>
           ) : (
-            <p className="mt-3 rounded-xl bg-emerald-50 p-3 text-emerald-950" role="status">
-              Correo confirmado. Ya puedes iniciar sesión.
-            </p>
+            <div className="mt-3 rounded-xl bg-emerald-50 p-3 text-emerald-950" role="status">
+              <p>Correo confirmado. Tu sesión se inició automáticamente.</p>
+              <Link className="mt-2 inline-flex min-h-11 items-center font-semibold underline" href="/mi-cuenta">
+                Ir a mi cuenta
+              </Link>
+            </div>
           )
         )}
         <p className="mt-3 leading-7 text-slate-700">
@@ -40,6 +46,7 @@ export default async function SignInPage({
         </p>
         <AuthForm
           mode="sign-in"
+          googleAuthEnabled={googleAuthEnabled}
           producerIntent={producerIntent}
           redirectTo={redirectTo}
         />

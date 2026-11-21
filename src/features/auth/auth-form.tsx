@@ -11,24 +11,30 @@ type AuthFormProps = {
   mode: "sign-in" | "sign-up";
   producerIntent?: boolean;
   redirectTo?: string | null;
+  googleAuthEnabled?: boolean;
 };
 
 export function AuthForm({
   mode,
   producerIntent = false,
   redirectTo,
+  googleAuthEnabled = false,
 }: AuthFormProps) {
   const router = useRouter();
   const [message, setMessage] = useState("");
-  const [pending, setPending] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"email" | "google" | null>(
+    null,
+  );
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const isSignUp = mode === "sign-up";
+  const postAuthDestination =
+    redirectTo ?? (producerIntent ? "/mi-cuenta?intent=producer" : "/mi-cuenta");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    setPending(true);
+    setPendingAction("email");
     setMessage("");
 
     try {
@@ -37,11 +43,12 @@ export function AuthForm({
             name: String(formData.get("name") ?? ""),
             email: String(formData.get("email") ?? ""),
             password: String(formData.get("password") ?? ""),
-            callbackURL: verificationCallback,
+            callbackURL: postAuthDestination,
           })
         : await authClient.signIn.email({
             email: String(formData.get("email") ?? ""),
             password: String(formData.get("password") ?? ""),
+            callbackURL: postAuthDestination,
           });
 
       if (result.error) {
@@ -64,17 +71,38 @@ export function AuthForm({
         return;
       }
 
-      router.push(
-        redirectTo ??
-          (producerIntent ? "/mi-cuenta?intent=producer" : "/mi-cuenta"),
-      );
+      router.push(postAuthDestination);
       router.refresh();
     } catch {
       setMessage(
         "No pudimos conectarnos. Revisa tu conexión e inténtalo de nuevo.",
       );
     } finally {
-      setPending(false);
+      setPendingAction(null);
+    }
+  }
+
+  async function signInWithGoogle() {
+    setPendingAction("google");
+    setMessage("");
+
+    try {
+      const result = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: postAuthDestination,
+      });
+
+      if (result.error) {
+        setMessage(
+          "No pudimos iniciar sesión con Google. Comprueba que tu correo de Google esté confirmado o prueba otra opción de acceso.",
+        );
+      }
+    } catch {
+      setMessage(
+        "No pudimos conectarnos con Google. Revisa tu conexión e inténtalo de nuevo.",
+      );
+    } finally {
+      setPendingAction(null);
     }
   }
 
@@ -93,8 +121,6 @@ export function AuthForm({
   const signInHref = signInQueryString
     ? `/iniciar-sesion?${signInQueryString}`
     : "/iniciar-sesion";
-  signInQuery.set("correo", "confirmado");
-  const verificationCallback = `/iniciar-sesion?${signInQuery}`;
 
   if (isSignUp && registrationComplete) {
     return (
@@ -111,10 +137,10 @@ export function AuthForm({
             Registro recibido
           </h2>
           <p className="mt-2 leading-7 text-slate-700">
-            Si tu correo está pendiente de confirmación, revisa tu bandeja de entrada y el correo no deseado. Abre el enlace para confirmar la cuenta e iniciar sesión.
+            Si es una cuenta nueva, revisa tu bandeja de entrada y confirma el correo. Al abrir el enlace, iniciarás sesión automáticamente. Si ya tienes cuenta, usa el mismo método con el que la creaste o recupera tu contraseña.
           </p>
         </div>
-        <ResendVerificationForm callbackURL={verificationCallback} initialEmail={verificationEmail} />
+        <ResendVerificationForm callbackURL={postAuthDestination} initialEmail={verificationEmail} />
         <Link
           className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-800 px-5 py-3 text-center font-semibold text-white hover:bg-emerald-900"
           href={signInHref}
@@ -133,7 +159,7 @@ export function AuthForm({
       method="post" onSubmit={submit}
       className="mt-8 space-y-5"
       aria-describedby={message ? "auth-message" : undefined}
-      aria-busy={pending}
+      aria-busy={Boolean(pendingAction)}
     >
       {isSignUp && (
         <div>
@@ -192,17 +218,40 @@ export function AuthForm({
         </p>
       )}
       <button
-        aria-busy={pending}
+        aria-busy={pendingAction === "email"}
         className="min-h-12 w-full rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 disabled:opacity-60"
-        disabled={pending}
+        disabled={pendingAction !== null}
         type="submit"
       >
-        {pending
+        {pendingAction === "email"
           ? <LoadingIndicator label={isSignUp ? "Creando cuenta…" : "Iniciando sesión…"} />
           : isSignUp
             ? "Crear cuenta"
             : "Iniciar sesión"}
       </button>
+      {googleAuthEnabled ? (
+        <button
+          aria-busy={pendingAction === "google"}
+          className="min-h-12 w-full rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+          disabled={pendingAction !== null}
+          onClick={signInWithGoogle}
+          type="button"
+        >
+          {pendingAction === "google"
+            ? <LoadingIndicator label="Conectando con Google…" />
+            : "Continuar con Google"}
+        </button>
+      ) : (
+        <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700" role="status">
+          El acceso con Google no está disponible por ahora. Puedes continuar con tu correo.
+        </p>
+      )}
+      {!isSignUp && (
+        <p className="text-sm leading-6 text-slate-700">
+          Si creaste tu cuenta con Google y quieres entrar con contraseña, usa
+          “¿Olvidaste tu contraseña?” para crear una de forma segura.
+        </p>
+      )}
       {!isSignUp && (
         <p className="text-center text-sm">
           <Link
@@ -226,7 +275,7 @@ export function AuthForm({
     {!isSignUp && (
       <details className="mt-5 rounded-xl border border-slate-200 p-4" open={verificationEmail ? true : undefined}>
         <summary className="min-h-11 cursor-pointer font-semibold text-emerald-900">¿No te llegó el correo de confirmación?</summary>
-        <ResendVerificationForm callbackURL={verificationCallback} initialEmail={verificationEmail} key={verificationEmail} />
+        <ResendVerificationForm callbackURL={postAuthDestination} initialEmail={verificationEmail} key={verificationEmail} />
       </details>
     )}
     </>

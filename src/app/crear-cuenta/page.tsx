@@ -10,6 +10,9 @@ export default async function SignUpPage({
   const params = await searchParams;
   const redirectTo = getOrderRequestRedirect(params.redirectTo);
   const producerIntent = params.intent === "producer";
+  const googleAuthEnabled = Boolean(
+    process.env.OAUTH_CLIENT_ID && process.env.OAUTH_CLIENT_SECRET,
+  );
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-xl items-center px-4 py-8 sm:px-6 sm:py-12">
@@ -33,6 +36,7 @@ export default async function SignUpPage({
         </p>
         <AuthForm
           mode="sign-up"
+          googleAuthEnabled={googleAuthEnabled}
           producerIntent={producerIntent}
           redirectTo={redirectTo}
         />

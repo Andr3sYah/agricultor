@@ -26,14 +26,38 @@ La aplicación local se sirve en `http://localhost:3000`.
 - `API_KEY_BREVO` y `BREVO_SENDER_EMAIL`: clave y dirección remitente
   verificada en Brevo. Se usan para confirmar el correo y recuperar la
   contraseña. El build puede ejecutarse sin estas credenciales.
-- El registro no requiere confirmación por correo. Después de registrarte,
-  inicia sesión; si el correo era nuevo, la cuenta ya quedó creada.
+- `OAUTH_CLIENT_ID` y `OAUTH_CLIENT_SECRET`: credenciales del cliente OAuth web
+  de Google. En Vercel, configura ambos nombres para habilitar el acceso con
+  Google. El botón no se muestra si falta alguno.
+- El registro manual requiere confirmar el correo. Después de abrir el enlace
+  de confirmación, Better Auth inicia la sesión automáticamente.
+- Las cuentas se vinculan con Google cuando el correo coincide y Google lo
+  confirma; no se aceptan correos distintos ni se reemplaza el perfil existente
+  al vincular. Google solo aporta los datos básicos que informe el proveedor,
+  no completa información agrícola.
+- Cuando Google entrega un correo verificado, se inicia sesión sin enviar otro
+  enlace de confirmación. Si Google no confirma el correo, Better Auth exige la
+  verificación antes de crear una sesión.
+- Una cuenta creada con Google puede crear una contraseña desde «¿Olvidaste tu
+  contraseña?» usando el mismo correo. Better Auth envía el enlace de forma
+  privada, sin revelar si existe una cuenta.
 - En Vercel, Better Auth usa los dominios de implementación que entrega el
   sistema (`VERCEL_URL`, `VERCEL_BRANCH_URL` y
   `VERCEL_PROJECT_PRODUCTION_URL`) para limitar los hosts permitidos.
 
-La creación de cuenta usa correo y contraseña. Después de confirmar el correo,
-la persona puede iniciar sesión, comprar y consultar sus pedidos. La opción
+La creación de cuenta ofrece correo y contraseña o Google. Después de confirmar
+el correo del registro manual, la persona inicia sesión automáticamente y puede
+comprar y consultar sus pedidos. Para Google OAuth, registra estas URI de
+redirección autorizadas en las credenciales de Google:
+
+- Desarrollo local: `http://localhost:3000/api/auth/callback/google`
+- Producción de Vercel: `https://<VERCEL_PROJECT_PRODUCTION_URL>/api/auth/callback/google`
+
+`VERCEL_PROJECT_PRODUCTION_URL` debe reemplazarse por el dominio de producción
+asignado al proyecto (sin `https://`). Si habilitas Google en un dominio de
+preview, registra también la URI exacta de ese dominio.
+
+La opción
 **Vender productos** abre el inventario de esa misma cuenta. Quienes tengan el
 correo pendiente pueden solicitar el enlace desde el inicio de sesión.
 La recuperación de contraseña

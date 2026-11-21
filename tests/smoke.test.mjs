@@ -10,6 +10,9 @@ import { fileURLToPath } from "node:url";
 const host = "127.0.0.1";
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const nextCli = join(projectRoot, "node_modules", "next", "dist", "bin", "next");
+const googleOAuthConfigured = Boolean(
+  process.env.OAUTH_CLIENT_ID && process.env.OAUTH_CLIENT_SECRET,
+);
 const focusStyles = await readFile(
   new URL("../src/app/globals.css", import.meta.url),
   "utf8",
@@ -32,6 +35,10 @@ const roleForm = await readFile(
 );
 const authForm = await readFile(
   new URL("../src/features/auth/auth-form.tsx", import.meta.url),
+  "utf8",
+);
+const authConfig = await readFile(
+  new URL("../src/lib/auth.ts", import.meta.url),
   "utf8",
 );
 const passwordResetForms = await readFile(
@@ -236,7 +243,7 @@ test("successful registration replaces the form with clear next steps", () => {
   assert.match(authForm, /setRegistrationComplete\(true\)/);
   assert.match(authForm, /if \(isSignUp && registrationComplete\)/);
   assert.match(authForm, /Registro recibido/);
-  assert.match(authForm, /Si tu correo está pendiente de confirmación/);
+  assert.match(authForm, /Al abrir el enlace, iniciarás sesión automáticamente/);
   assert.match(authForm, /ResendVerificationForm/);
   assert.match(authForm, /Creando cuenta…/);
   assert.match(authForm, /href=\{signInHref\}/);
@@ -244,6 +251,30 @@ test("successful registration replaces the form with clear next steps", () => {
   assert.doesNotMatch(authForm, /Si el correo está disponible/);
   assert.match(authForm, /if \(redirectTo\) signInQuery\.set\("redirectTo", redirectTo\)/);
   assert.match(authForm, /if \(producerIntent\) signInQuery\.set\("intent", "producer"\)/);
+});
+
+test("Google sign-in is available with safe account linking and clear password recovery", () => {
+  assert.match(authConfig, /process\.env\.OAUTH_CLIENT_ID/);
+  assert.match(authConfig, /process\.env\.OAUTH_CLIENT_SECRET/);
+  assert.match(authConfig, /autoSignIn: true/);
+  assert.match(authConfig, /requireEmailVerification: true/);
+  assert.match(
+    authConfig,
+    /accountLinking:\s*\{\s*enabled: true,\s*allowDifferentEmails: false,\s*updateUserInfoOnLink: false,/,
+  );
+  assert.match(
+    authConfig,
+    /google:\s*\{\s*clientId: googleClientId,\s*clientSecret: googleClientSecret,\s*requireEmailVerification: true/,
+  );
+  assert.doesNotMatch(authConfig, /trustedProviders/);
+  assert.match(authForm, /authClient\.signIn\.social\(\{\s*provider: "google"/);
+  assert.match(authForm, /callbackURL: postAuthDestination/);
+  assert.match(authForm, /Continuar con Google/);
+  assert.match(authForm, /Conectando con Google/);
+  assert.match(authForm, /No pudimos iniciar sesión con Google/);
+  assert.doesNotMatch(authConfig, /mapProfileToUser|overrideUserInfoOnSignIn:\s*true/);
+  assert.match(authForm, /¿Olvidaste tu contraseña\?/);
+  assert.match(authForm, /para crear una de forma segura/);
 });
 
 test("production sign-in page offers clear recovery and return navigation", async () => {
@@ -256,8 +287,26 @@ test("production sign-in page offers clear recovery and return navigation", asyn
   assert.match(html, /¿Olvidaste tu contraseña\?/);
   assert.match(html, /href="\/recuperar-contrasena"/);
   assert.match(html, /href="\/crear-cuenta"/);
+  assert.match(
+    html,
+    googleOAuthConfigured
+      ? /Continuar con Google/
+      : /El acceso con Google no está disponible/,
+  );
   assert.match(html, /aria-busy="false"/);
   assert.match(html, /min-h-12/);
+});
+
+test("production registration page reflects Google OAuth configuration", async () => {
+  const response = await fetch(`${url}/crear-cuenta`);
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(
+    html,
+    googleOAuthConfigured
+      ? /Continuar con Google/
+      : /El acceso con Google no está disponible/,
+  );
 });
 
 test("production sign-in preserves a validated order request through account creation", async () => {
