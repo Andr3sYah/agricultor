@@ -35,8 +35,19 @@ La aplicación local se sirve en `http://localhost:3000`.
   sistema (`VERCEL_URL`, `VERCEL_BRANCH_URL` y
   `VERCEL_PROJECT_PRODUCTION_URL`) para limitar los hosts permitidos.
 
-La creación de cuenta usa correo y contraseña. Después de confirmar el correo,
-la persona puede iniciar sesión, comprar y consultar sus pedidos. La opción
+La creación de cuenta ofrece correo y contraseña o Google. Después de confirmar
+el correo del registro manual, la persona inicia sesión automáticamente y puede
+comprar y consultar sus pedidos. Para Google OAuth, registra estas URI de
+redirección autorizadas en las credenciales de Google:
+
+- Desarrollo local: `http://localhost:3000/api/auth/callback/google`
+- Producción de Vercel: `https://<VERCEL_PROJECT_PRODUCTION_URL>/api/auth/callback/google`
+
+`VERCEL_PROJECT_PRODUCTION_URL` debe reemplazarse por el dominio de producción
+asignado al proyecto (sin `https://`). Si habilitas Google en un dominio de
+preview, registra también la URI exacta de ese dominio.
+
+La opción
 **Vender productos** abre el inventario de esa misma cuenta. Quienes tengan el
 correo pendiente pueden solicitar el enlace desde el inicio de sesión.
 La recuperación de contraseña

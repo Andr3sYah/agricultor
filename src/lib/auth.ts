@@ -20,6 +20,8 @@ function createAuth() {
   ].filter((host): host is string => Boolean(host));
   const fallbackHost =
     process.env.VERCEL_URL ?? process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const googleClientId = process.env.OAUTH_CLIENT_ID;
+  const googleClientSecret = process.env.OAUTH_CLIENT_SECRET;
   const e2eBaseURL = process.env.AUTH_E2E_BASE_URL
     ? new URL(process.env.AUTH_E2E_BASE_URL)
     : undefined;
@@ -71,6 +73,24 @@ function createAuth() {
     database: prismaAdapter(prisma, {
       provider: "postgresql",
     }),
+    account: {
+      accountLinking: {
+        enabled: true,
+        allowDifferentEmails: false,
+        updateUserInfoOnLink: false,
+      },
+    },
+    ...(googleClientId && googleClientSecret
+      ? {
+          socialProviders: {
+            google: {
+              clientId: googleClientId,
+              clientSecret: googleClientSecret,
+              requireEmailVerification: true,
+            },
+          },
+        }
+      : {}),
     advanced: {
       backgroundTasks: {
         handler: (promise) => after(promise),
@@ -81,7 +101,7 @@ function createAuth() {
       requireEmailVerification: true,
       minPasswordLength: 8,
       maxPasswordLength: 128,
-      autoSignIn: false,
+      autoSignIn: true,
       sendResetPassword: async ({ user, url }) => {
         await sendPasswordResetEmail({
           email: user.email,

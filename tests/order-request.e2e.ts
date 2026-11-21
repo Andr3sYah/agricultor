@@ -180,6 +180,8 @@ async function startServer(
         TZ: "UTC",
         TEST_DATABASE_URL: databaseUrl,
         AUTH_E2E_BASE_URL: `http://localhost:${port}`,
+        OAUTH_CLIENT_ID: `e2e-${randomUUID()}`,
+        OAUTH_CLIENT_SECRET: randomBytes(32).toString("base64url"),
         API_KEY_BREVO: E2E_BREVO_API_KEY,
         BREVO_SENDER_EMAIL: "no-reply@example.test",
         BREVO_TEST_API_URL: brevoApiUrl,
@@ -259,6 +261,7 @@ async function main(): Promise<void> {
         name: "Productor de prueba E2E",
         email: producerEmail,
         password: producerPassword,
+        callbackURL: "/mi-cuenta",
       },
     });
     assert.equal(
@@ -270,13 +273,19 @@ async function main(): Promise<void> {
     const producerVerificationUrl = producerVerification.textContent.match(/https?:\/\/\S+/)?.[0];
     assert.ok(producerVerificationUrl);
     assert.ok((await producerApi.get(producerVerificationUrl)).ok());
+    const producerSession = await producerApi.get("/api/auth/get-session");
+    assert.equal(producerSession.ok(), true);
+    assert.equal((await producerSession.json()).user.email, producerEmail);
+    const producerSignout = await producerApi.post("/api/auth/sign-out");
+    assert.equal(producerSignout.ok(), true);
+    assert.equal(await (await producerApi.get("/api/auth/get-session")).json(), null);
     const producerSignin = await producerApi.post("/api/auth/sign-in/email", {
       data: { email: producerEmail, password: producerPassword },
     });
+    assert.equal(producerSignin.ok(), true);
     assert.equal(
-      producerSignin.ok(),
-      true,
-      `Producer signin failed: ${await producerSignin.text()}`,
+      (await (await producerApi.get("/api/auth/get-session")).json()).user.email,
+      producerEmail,
     );
     const producer = await database.user.findUniqueOrThrow({
       where: { email: producerEmail },
@@ -329,7 +338,12 @@ async function main(): Promise<void> {
 
     try {
       const signup = await api.post("/api/auth/sign-up/email", {
-        data: { name: "Comprador E2E", email, password },
+        data: {
+          name: "Comprador E2E",
+          email,
+          password,
+          callbackURL: "/mi-cuenta",
+        },
       });
       assert.equal(signup.ok(), true, `Signup failed: ${await signup.text()}`);
 
@@ -343,7 +357,7 @@ async function main(): Promise<void> {
       const unverifiedSignin = await api.post("/api/auth/sign-in/email", { data: { email, password } });
       assert.equal(unverifiedSignin.status(), 403);
       const resend = await api.post("/api/auth/send-verification-email", {
-        data: { email, callbackURL: "/iniciar-sesion?correo=confirmado" },
+        data: { email, callbackURL: "/mi-cuenta" },
       });
       assert.ok(resend.ok());
       const buyerVerification = await waitForAccountEmail(brevoStub.messages, email, "/verify-email?");
@@ -351,7 +365,9 @@ async function main(): Promise<void> {
       assert.ok(buyerVerificationUrl);
       const verified = await api.get(buyerVerificationUrl);
       assert.ok(verified.ok());
-      assert.match(await verified.text(), /Correo confirmado/);
+      const buyerSession = await api.get("/api/auth/get-session");
+      assert.equal(buyerSession.ok(), true);
+      assert.equal((await buyerSession.json()).user.email, email);
 
       const resetRequest = await api.post(
         "/api/auth/request-password-reset",
@@ -384,6 +400,102 @@ async function main(): Promise<void> {
 
       const newPassword = `Reset-${randomUUID()}-pass`;
       browser = await chromium.launch({ headless: true });
+
+      const googleOnlyEmail = `google-e2e-${suffix}@example.test`;
+      const googleOnlyUser = await database.user.create({
+        data: {
+          id: randomUUID(),
+          name: "Cuenta de prueba Google",
+          email: googleOnlyEmail,
+          emailVerified: true,
+          accounts: {
+            create: {
+              id: randomUUID(),
+              accountId: `google-${suffix}`,
+              providerId: "google",
+            },
+          },
+        },
+        select: { id: true },
+      });
+      fixtureUserIds.push(googleOnlyUser.id);
+      const googleApi = await playwrightRequest.newContext({
+        baseURL,
+        extraHTTPHeaders: {
+          Origin: baseURL,
+          Referer: `${baseURL}/iniciar-sesion`,
+        },
+      });
+      const googleResetRequest = await googleApi.post(
+        "/api/auth/request-password-reset",
+        {
+          data: {
+            email: googleOnlyEmail,
+            redirectTo: `${baseURL}/restablecer-contrasena`,
+          },
+        },
+      );
+      assert.equal(googleResetRequest.ok(), true);
+      const googleResetEmail = await waitForAccountEmail(
+        brevoStub.messages,
+        googleOnlyEmail,
+        "/reset-password/",
+      );
+      const googleResetLink = googleResetEmail.textContent.match(/https?:\/\/\S+/)?.[0];
+      assert.ok(googleResetLink);
+      const googleResetPage = await googleApi.get(googleResetLink);
+      assert.ok(googleResetPage.ok());
+      const googleResetToken = new URL(googleResetPage.url()).searchParams.get("token");
+      assert.ok(googleResetToken);
+      const googlePassword = `Google-${randomUUID()}-pass`;
+      const googlePasswordReset = await googleApi.post(
+        "/api/auth/reset-password",
+        { data: { newPassword: googlePassword, token: googleResetToken } },
+      );
+      assert.equal(googlePasswordReset.ok(), true);
+      assert.equal(
+        await database.user.count({ where: { email: googleOnlyEmail } }),
+        1,
+      );
+      const googleCredentialCount = await database.account.count({
+        where: { userId: googleOnlyUser.id, providerId: "credential" },
+      });
+      assert.equal(googleCredentialCount, 1);
+      const googlePasswordSignin = await googleApi.post(
+        "/api/auth/sign-in/email",
+        { data: { email: googleOnlyEmail, password: googlePassword } },
+      );
+      assert.equal(googlePasswordSignin.ok(), true);
+      await googleApi.dispose();
+
+      const googlePage = await browser.newPage();
+      await googlePage.goto(`${baseURL}/iniciar-sesion`);
+      const googleButton = googlePage.getByRole("button", {
+        name: "Continuar con Google",
+      });
+      let releaseGoogleError!: () => void;
+      const googleErrorGate = new Promise<void>((resolve) => {
+        releaseGoogleError = resolve;
+      });
+      await googlePage.route(
+        "**/api/auth/sign-in/social",
+        async (route) => {
+          await googleErrorGate;
+          await route.fulfill({
+            status: 500,
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ message: "mock Google failure" }),
+          });
+        },
+      );
+      await googleButton.click();
+      await expect(googleButton).toContainText("Conectando con Google");
+      releaseGoogleError();
+      await expect(googlePage.getByRole("alert")).toContainText(
+        /No pudimos (iniciar sesión|conectarnos) con Google/,
+      );
+      await googlePage.close();
+
       const anonymousContext = await browser.newContext();
       const anonymousPage = await anonymousContext.newPage();
       const catalogQuery = new URLSearchParams({
