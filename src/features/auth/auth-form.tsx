@@ -231,6 +231,7 @@ export function AuthForm({
       </button>
       {googleAuthEnabled ? (
         <button
+          aria-label="Continuar con Google"
           aria-busy={pendingAction === "google"}
           className="min-h-12 w-full rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
           disabled={pendingAction !== null}
