@@ -518,7 +518,7 @@ async function main(): Promise<void> {
       await googleButton.click();
       await expect(googleButton).toContainText("Conectando con Google");
       releaseGoogleError();
-      await expect(googlePage.getByRole("alert")).toContainText(
+      await expect(googlePage.locator("#auth-message")).toContainText(
         /No pudimos (iniciar sesión|conectarnos) con Google/,
       );
       await googlePage.close();
