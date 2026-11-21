@@ -29,8 +29,8 @@ La aplicación local se sirve en `http://localhost:3000`.
   problema». Los reportes llegan a `andresdario.2001@gmail.com`. El build puede
   ejecutarse sin estas credenciales; para recibir reportes en Vercel, configura
   estas mismas dos variables y usa una dirección remitente verificada en Brevo.
-- El registro no requiere confirmación por correo. Después de registrarte,
-  inicia sesión; si el correo era nuevo, la cuenta ya quedó creada.
+- El registro manual requiere confirmar el correo. Al abrir el enlace,
+  Better Auth inicia la sesión automáticamente.
 - En Vercel, Better Auth usa los dominios de implementación que entrega el
   sistema (`VERCEL_URL`, `VERCEL_BRANCH_URL` y
   `VERCEL_PROJECT_PRODUCTION_URL`) para limitar los hosts permitidos.

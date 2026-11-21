@@ -113,6 +113,7 @@ function createAuth() {
       revokeSessionsOnPasswordReset: true,
     },
     emailVerification: {
+      autoSignInAfterVerification: true,
       sendOnSignUp: true,
       sendOnSignIn: false,
       expiresIn: 60 * 60,

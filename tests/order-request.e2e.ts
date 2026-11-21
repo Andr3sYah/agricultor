@@ -275,7 +275,12 @@ async function main(): Promise<void> {
     assert.ok((await producerApi.get(producerVerificationUrl)).ok());
     const producerSession = await producerApi.get("/api/auth/get-session");
     assert.equal(producerSession.ok(), true);
-    assert.equal((await producerSession.json()).user.email, producerEmail);
+    const producerSessionData = await producerSession.json();
+    assert.ok(
+      producerSessionData,
+      "Email verification should establish a producer session.",
+    );
+    assert.equal(producerSessionData.user.email, producerEmail);
     const producerSignout = await producerApi.post("/api/auth/sign-out");
     assert.equal(producerSignout.ok(), true);
     assert.equal(await (await producerApi.get("/api/auth/get-session")).json(), null);
@@ -367,7 +372,9 @@ async function main(): Promise<void> {
       assert.ok(verified.ok());
       const buyerSession = await api.get("/api/auth/get-session");
       assert.equal(buyerSession.ok(), true);
-      assert.equal((await buyerSession.json()).user.email, email);
+      const buyerSessionData = await buyerSession.json();
+      assert.ok(buyerSessionData, "Email verification should establish a buyer session.");
+      assert.equal(buyerSessionData.user.email, email);
 
       const resetRequest = await api.post(
         "/api/auth/request-password-reset",
