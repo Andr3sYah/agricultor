@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import market from "../../public/mercado-potrerillo.webp";
 
 export const metadata: Metadata = {
   title: "Agricultor | Productos del campo",
@@ -58,7 +57,7 @@ export default function Home() {
               className="aspect-[4/3] w-full bg-[#d5baa0] object-cover object-[50%_28%]"
               preload
               sizes="(min-width: 1280px) 590px, (min-width: 1024px) 48vw, 100vw"
-              src={market}
+              src="/mercado-potrerillo.webp"
             />
             <figcaption className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm text-[#514738]">
               <span>Mercado El Potrerillo · Pasto, Nariño</span>
