@@ -3,11 +3,13 @@ import { test } from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { SiteHeader } from "./site-header";
 
-test("authenticated header links directly to the account", () => {
+test("authenticated header links to Mi cuenta", () => {
   const html = renderToStaticMarkup(<SiteHeader authenticated />);
 
-  assert.match(html, /href="\/mi-cuenta">Mi cuenta<\/a>/);
-  assert.doesNotMatch(html, /Sesión iniciada|Inicia sesión|Crear cuenta/);
+  assert.match(html, /href="\/mi-cuenta"/);
+  assert.match(html, />Mi cuenta<\/a>/);
+  assert.match(html, /aria-label="Ir a Mi cuenta"/);
+  assert.doesNotMatch(html, /Andrés|Sesión iniciada|Inicia sesión|Crear cuenta/);
 });
 
 test("anonymous header keeps the sign-in link", () => {

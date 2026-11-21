@@ -11,15 +11,11 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   const session = await getCurrentSession();
-  const displayName = session?.user.name?.trim() || null;
 
   return (
     <main className="min-h-screen bg-[#f8f1e4] text-[#253528]">
       <div className="mx-auto max-w-7xl px-5 pb-8 sm:px-9">
-        <SiteHeader
-          authenticated={Boolean(session)}
-          displayName={displayName}
-        />
+        <SiteHeader authenticated={Boolean(session)} />
 
         <section aria-labelledby="welcome-title" className="grid items-center gap-8 py-8 sm:py-12 lg:grid-cols-[1fr_1.04fr] lg:gap-14">
           <div>

@@ -93,10 +93,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-      <SiteHeader
-        authenticated={Boolean(identity)}
-        displayName={identity?.displayName}
-      />
+      <SiteHeader authenticated={Boolean(identity)} />
       <Link
         className="mt-3 inline-flex min-h-12 items-center font-semibold text-emerald-900 underline"
         href="/"
