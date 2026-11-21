@@ -24,23 +24,13 @@ La aplicación local se sirve en `http://localhost:3000`.
 - `DATABASE_URL`: conexión PostgreSQL de Neon. La aplicación usa el adaptador
   serverless de Neon; configura la URL de conexión agrupada que entrega Neon.
 - `API_KEY_BREVO` y `BREVO_SENDER_EMAIL`: clave y dirección remitente
-  verificada en Brevo. Se usan para confirmar el correo y recuperar la
-  contraseña. El build puede ejecutarse sin estas credenciales.
-- `OAUTH_CLIENT_ID` y `OAUTH_CLIENT_SECRET`: credenciales del cliente OAuth web
-  de Google. En Vercel, configura ambos nombres para habilitar el acceso con
-  Google. El botón no se muestra si falta alguno.
-- El registro manual requiere confirmar el correo. Después de abrir el enlace
-  de confirmación, Better Auth inicia la sesión automáticamente.
-- Las cuentas se vinculan con Google cuando el correo coincide y Google lo
-  confirma; no se aceptan correos distintos ni se reemplaza el perfil existente
-  al vincular. Google solo aporta los datos básicos que informe el proveedor,
-  no completa información agrícola.
-- Cuando Google entrega un correo verificado, se inicia sesión sin enviar otro
-  enlace de confirmación. Si Google no confirma el correo, Better Auth exige la
-  verificación antes de crear una sesión.
-- Una cuenta creada con Google puede crear una contraseña desde «¿Olvidaste tu
-  contraseña?» usando el mismo correo. Better Auth envía el enlace de forma
-  privada, sin revelar si existe una cuenta.
+  verificada en Brevo. Se usan para confirmar el correo, recuperar la
+  contraseña y recibir por correo los reportes enviados desde «Reportar un
+  problema». Los reportes llegan a `andresdario.2001@gmail.com`. El build puede
+  ejecutarse sin estas credenciales; para recibir reportes en Vercel, configura
+  estas mismas dos variables y usa una dirección remitente verificada en Brevo.
+- El registro no requiere confirmación por correo. Después de registrarte,
+  inicia sesión; si el correo era nuevo, la cuenta ya quedó creada.
 - En Vercel, Better Auth usa los dominios de implementación que entrega el
   sistema (`VERCEL_URL`, `VERCEL_BRANCH_URL` y
   `VERCEL_PROJECT_PRODUCTION_URL`) para limitar los hosts permitidos.
@@ -72,6 +62,10 @@ y `COUDINARY_API_KEY` parece tener una errata; no se debe configurar ni usar
 hasta implementar esa integración con el nombre correcto `CLOUDINARY_API_KEY`.
 `.env.example` enumera las variables aplicables sin valores. No se puede
 comprobar desde el repositorio cuáles variables están guardadas en Vercel.
+
+El formulario público de reportes aplica una trampa honeypot, valida el origen y
+el tamaño del mensaje, y limita cada dirección IP a tres envíos cada diez
+minutos por instancia de servidor.
 
 El esquema y sus migraciones están versionados, pero no se aplican
 automáticamente. Antes de desplegar una migración, verifica que `DATABASE_URL`
