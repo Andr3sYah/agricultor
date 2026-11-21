@@ -1,31 +1,21 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { SiteHeader } from "@/components/site-header";
+import { getCurrentSession } from "@/lib/auth/server";
 
 export const metadata: Metadata = {
   title: "Agricultor | Productos del campo",
   description: "Compra y vende productos del campo en Colombia.",
 };
 
-export default function Home() {
+export default async function Home() {
+  const session = await getCurrentSession();
+
   return (
     <main className="min-h-screen bg-[#f8f1e4] text-[#253528]">
       <div className="mx-auto max-w-7xl px-5 pb-8 sm:px-9">
-        <header className="flex min-h-20 items-center justify-between gap-4 border-b border-[#b7ab96]">
-          <Link
-            aria-label="Agricultor, inicio"
-            className="font-serif text-3xl font-bold leading-none tracking-tight"
-            href="/"
-          >
-            Agricultor
-          </Link>
-          <Link
-            className="inline-flex min-h-12 items-center px-2 font-bold underline decoration-[#91612e] underline-offset-4"
-            href="/iniciar-sesion"
-          >
-            Inicia sesión
-          </Link>
-        </header>
+        <SiteHeader authenticated={Boolean(session)} />
 
         <section aria-labelledby="welcome-title" className="grid items-center gap-8 py-8 sm:py-12 lg:grid-cols-[1fr_1.04fr] lg:gap-14">
           <div>

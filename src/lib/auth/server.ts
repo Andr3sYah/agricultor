@@ -8,14 +8,33 @@ import {
   type UserRole,
 } from "@/lib/auth/roles";
 
+export async function getCurrentSession() {
+  const requestHeaders = await headers();
+  const hasSessionCookie = requestHeaders
+    .get("cookie")
+    ?.split(";")
+    .some((cookie) => {
+      const name = cookie.trim().split("=", 1)[0];
+      return (
+        name === "better-auth.session_token" ||
+        name === "__Secure-better-auth.session_token"
+      );
+    });
+
+  if (!hasSessionCookie) {
+    return null;
+  }
+
+  return getAuth().api.getSession({
+    headers: requestHeaders,
+  });
+}
+
 export async function getCurrentIdentity(): Promise<{
   userId: string;
   roles: UserRole[];
 } | null> {
-  const requestHeaders = await headers();
-  const session = await getAuth().api.getSession({
-    headers: requestHeaders,
-  });
+  const session = await getCurrentSession();
 
   if (!session) {
     return null;

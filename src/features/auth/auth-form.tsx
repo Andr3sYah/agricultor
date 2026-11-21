@@ -192,6 +192,7 @@ export function AuthForm({
         </p>
       )}
       <button
+        aria-busy={pending}
         className="min-h-12 w-full rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 disabled:opacity-60"
         disabled={pending}
         type="submit"
