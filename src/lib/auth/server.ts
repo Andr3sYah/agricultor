@@ -33,6 +33,7 @@ export async function getCurrentSession() {
 export async function getCurrentIdentity(): Promise<{
   userId: string;
   roles: UserRole[];
+  displayName: string | null;
 } | null> {
   const session = await getCurrentSession();
 
@@ -51,6 +52,7 @@ export async function getCurrentIdentity(): Promise<{
   return {
     userId: session.user.id,
     roles: [...roles],
+    displayName: session.user.name?.trim() || null,
   };
 }
 
