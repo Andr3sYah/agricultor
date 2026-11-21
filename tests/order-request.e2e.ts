@@ -292,12 +292,20 @@ async function main(): Promise<void> {
     );
     assert.equal(producerSessionData.user.email, producerEmail);
     const producerSignout = await producerApi.post("/api/auth/sign-out");
-    assert.equal(producerSignout.ok(), true);
+    assert.equal(
+      producerSignout.status(),
+      200,
+      `Producer sign-out failed: ${await producerSignout.text()}`,
+    );
     assert.equal(await (await producerApi.get("/api/auth/get-session")).json(), null);
     const producerSignin = await producerApi.post("/api/auth/sign-in/email", {
       data: { email: producerEmail, password: producerPassword },
     });
-    assert.equal(producerSignin.ok(), true);
+    assert.equal(
+      producerSignin.status(),
+      200,
+      `Producer sign-in failed: ${await producerSignin.text()}`,
+    );
     assert.equal(
       (await (await producerApi.get("/api/auth/get-session")).json()).user.email,
       producerEmail,
