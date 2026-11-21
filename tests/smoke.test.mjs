@@ -128,10 +128,21 @@ test("production home page offers one shared signup and a single sign-in link", 
   assert.match(html, /Consulta precios y cantidades sin registrarte/);
   assert.match(html, /href="\/iniciar-sesion">Inicia sesión<\/a>/);
   assert.match(html, /Mercado El Potrerillo/);
+  assert.match(html, /mercado-potrerillo\.webp/);
+  assert.match(
+    html,
+    /alt="Dos vendedoras atienden un puesto de frutas y verduras en la plaza de mercado\."/,
+  );
   assert.doesNotMatch(
     html,
     /Crear cuenta para vender|Quiero comprar|Quiero vender|Elige cómo participar|intent=producer/,
   );
+});
+
+test("production serves the home page's public market image", async () => {
+  const response = await fetch(`${url}/mercado-potrerillo.webp`);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /^image\/webp/);
 });
 
 test("production serves the offline worker, policy, and app manifest", async () => {
