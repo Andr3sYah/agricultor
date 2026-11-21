@@ -10,6 +10,21 @@ import {
 
 export async function getCurrentSession() {
   const requestHeaders = await headers();
+  const hasSessionCookie = requestHeaders
+    .get("cookie")
+    ?.split(";")
+    .some((cookie) => {
+      const name = cookie.trim().split("=", 1)[0];
+      return (
+        name === "better-auth.session_token" ||
+        name === "__Secure-better-auth.session_token"
+      );
+    });
+
+  if (!hasSessionCookie) {
+    return null;
+  }
+
   return getAuth().api.getSession({
     headers: requestHeaders,
   });
