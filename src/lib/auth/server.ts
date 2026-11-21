@@ -8,14 +8,18 @@ import {
   type UserRole,
 } from "@/lib/auth/roles";
 
+export async function getCurrentSession() {
+  const requestHeaders = await headers();
+  return getAuth().api.getSession({
+    headers: requestHeaders,
+  });
+}
+
 export async function getCurrentIdentity(): Promise<{
   userId: string;
   roles: UserRole[];
 } | null> {
-  const requestHeaders = await headers();
-  const session = await getAuth().api.getSession({
-    headers: requestHeaders,
-  });
+  const session = await getCurrentSession();
 
   if (!session) {
     return null;
