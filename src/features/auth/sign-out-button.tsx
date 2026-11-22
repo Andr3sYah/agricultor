@@ -11,7 +11,7 @@ export function SignOutButton() {
   return (
     <div className="text-right">
       <button
-        className="min-h-12 rounded-md px-3 py-3 font-semibold text-[#253528] underline underline-offset-4 hover:bg-[#edddc2]"
+        className="min-h-12 rounded-xl border border-control-border bg-surface px-4 py-3 font-semibold text-foreground underline underline-offset-4 transition-colors hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         onClick={async () => {
           setMessage("");
           try {
@@ -31,7 +31,7 @@ export function SignOutButton() {
         Cerrar sesión
       </button>
       {message && (
-        <p className="mt-2 text-sm text-red-800" role="alert">
+        <p className="mt-2 rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-950" role="alert">
           {message}
         </p>
       )}

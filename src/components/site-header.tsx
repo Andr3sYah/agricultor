@@ -6,7 +6,7 @@ export function SiteHeader({
   authenticated: boolean;
 }) {
   return (
-    <header className="flex min-h-20 items-center justify-between gap-4 border-b border-[#b7ab96]">
+    <header className="flex min-h-20 items-center justify-between gap-4 border-b border-border">
       <Link
         aria-label="Agricultor, inicio"
         className="font-serif text-3xl font-bold leading-none tracking-tight"
@@ -16,7 +16,7 @@ export function SiteHeader({
       </Link>
       <Link
         aria-label={authenticated ? "Ir a Mi cuenta" : undefined}
-        className="inline-flex min-h-12 items-center px-2 text-right text-sm font-bold underline decoration-[#91612e] underline-offset-4 sm:text-base"
+        className="inline-flex min-h-12 items-center px-2 text-right text-sm font-bold text-primary underline decoration-primary underline-offset-4 hover:text-primary-hover sm:text-base"
         href={authenticated ? "/mi-cuenta" : "/iniciar-sesion"}
       >
         {authenticated ? "Mi cuenta" : "Inicia sesión"}

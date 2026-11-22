@@ -72,7 +72,7 @@ export function ProblemReportForm() {
           }
           aria-invalid={Boolean(result.fieldErrors?.title)}
           autoComplete="off"
-          className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-4 py-3"
+          className="mt-2 min-h-12 w-full rounded-xl border border-control-border bg-surface-muted px-4 py-3 text-slate-950 hover:border-slate-700 focus-visible:border-primary aria-[invalid=true]:border-rose-700"
           id="problem-title"
           maxLength={120}
           minLength={5}
@@ -81,7 +81,11 @@ export function ProblemReportForm() {
           type="text"
         />
         {result.fieldErrors?.title && (
-          <p className="mt-1 text-sm text-red-800" id="problem-title-error" role="alert">
+          <p
+            className="mt-1 text-sm text-rose-950"
+            id="problem-title-error"
+            role="alert"
+          >
             {result.fieldErrors.title}
           </p>
         )}
@@ -101,7 +105,7 @@ export function ProblemReportForm() {
               : "problem-description-help"
           }
           aria-invalid={Boolean(result.fieldErrors?.description)}
-          className="mt-2 min-h-36 w-full rounded-xl border border-slate-300 bg-white px-4 py-3"
+          className="mt-2 min-h-36 w-full rounded-xl border border-control-border bg-surface-muted px-4 py-3 text-slate-950 hover:border-slate-700 focus-visible:border-primary aria-[invalid=true]:border-rose-700"
           id="problem-description"
           maxLength={4000}
           minLength={20}
@@ -110,7 +114,11 @@ export function ProblemReportForm() {
           rows={6}
         />
         {result.fieldErrors?.description && (
-          <p className="mt-1 text-sm text-red-800" id="problem-description-error" role="alert">
+          <p
+            className="mt-1 text-sm text-rose-950"
+            id="problem-description-error"
+            role="alert"
+          >
             {result.fieldErrors.description}
           </p>
         )}
@@ -135,14 +143,14 @@ export function ProblemReportForm() {
       </p>
       {result.message && (
         <p
-          className={result.ok ? "text-emerald-900" : "text-red-800"}
+          className={result.ok ? "rounded-xl border border-emerald-300 bg-surface-accent p-3 text-emerald-950" : "rounded-xl border border-rose-300 bg-rose-50 p-3 text-rose-950"}
           role={result.ok ? "status" : "alert"}
         >
           {result.message}
         </p>
       )}
       <button
-        className="min-h-12 w-full rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 disabled:opacity-60 sm:w-auto"
+        className="min-h-12 w-full rounded-xl bg-primary px-5 py-3 font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:bg-slate-500 sm:w-auto"
         disabled={pending}
         type="submit"
       >
