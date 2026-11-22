@@ -9,10 +9,10 @@ import { prisma } from "@/lib/db";
 import { isSellerProfileAvailable } from "@/features/sellers/seller-profile";
 import Link from "next/link";
 
-const button = "inline-flex min-h-12 items-center justify-center rounded-md px-4 py-3 text-center font-semibold";
-const primary = `${button} bg-[#314b32] text-[#fff9e9] hover:bg-[#213623]`;
-const secondary = `${button} bg-[#edddc2] text-[#253528] hover:bg-[#e4cfaa]`;
-const card = "border-t border-[#b7ab96] py-5 sm:py-6";
+const button = "inline-flex min-h-12 items-center justify-center rounded-xl px-4 py-3 text-center font-semibold";
+const primary = `${button} bg-primary text-white transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`;
+const secondary = `${button} border border-control-border bg-surface text-foreground transition-colors hover:bg-secondary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`;
+const card = "border-t border-border py-5 sm:py-6";
 
 export default async function AccountPage({
   searchParams,
@@ -39,7 +39,7 @@ export default async function AccountPage({
     : [null, 0, false] as const;
 
   return (
-    <main className="min-h-screen bg-[#f8f1e4] text-[#253528]">
+    <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
         <header className="flex flex-wrap items-center justify-between gap-3 pb-4">
           <h1 className="font-serif text-4xl font-bold">Mi cuenta</h1>
@@ -58,15 +58,15 @@ export default async function AccountPage({
           {dashboard ? (
             <>
               <dl className="mt-4 grid grid-cols-3 gap-2">
-                <div className="border-l-2 border-[#70815d] pl-3">
+                <div className="border-l-2 border-emerald-700 pl-3">
                   <dt className="text-sm">Publicados</dt>
                   <dd className="text-xl font-bold">{dashboard.products.published}</dd>
                 </div>
-                <div className="border-l-2 border-[#91612e] pl-3">
+                <div className="border-l-2 border-amber-700 pl-3">
                   <dt className="text-sm">Agotados</dt>
                   <dd className="text-xl font-bold">{dashboard.products.soldOut}</dd>
                 </div>
-                <div className="border-l-2 border-[#91612e] pl-3">
+                <div className="border-l-2 border-blue-700 pl-3">
                   <dt className="text-sm">Por responder</dt>
                   <dd className="text-xl font-bold">{dashboard.orders.PENDING}</dd>
                 </div>

@@ -9,17 +9,17 @@ export const metadata: Metadata = {
 
 export default function ReportProblemPage() {
   return (
-    <main className="min-h-screen flex-1 bg-[#f8f1e4] px-5 py-8 text-[#253528] sm:px-9 sm:py-12">
+    <main className="min-h-screen flex-1 bg-background px-5 py-8 text-foreground sm:px-9 sm:py-12">
       <div className="mx-auto max-w-2xl">
         <Link
-          className="font-semibold underline decoration-[#91612e] underline-offset-4"
+          className="font-semibold text-primary underline decoration-primary underline-offset-4 hover:text-primary-hover"
           href="/"
         >
           Volver al inicio
         </Link>
         <section
           aria-labelledby="report-problem-title"
-          className="mt-6 rounded-2xl border border-[#d6cab4] bg-white/80 p-5 shadow-sm sm:p-8"
+          className="mt-6 rounded-2xl border border-border bg-surface p-5 shadow-lg shadow-slate-900/5 sm:p-8"
         >
           <h1
             className="font-serif text-3xl font-bold tracking-tight sm:text-4xl"

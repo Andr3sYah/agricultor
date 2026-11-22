@@ -134,7 +134,7 @@ export function AuthForm({
     return (
       <section
         aria-labelledby="registration-success-title"
-        className="mt-8 space-y-5 rounded-2xl border border-emerald-800/20 bg-emerald-50 p-5"
+        className="mt-8 space-y-5 rounded-2xl border border-emerald-300 bg-surface-accent p-5"
         role="status"
       >
         <div>
@@ -150,7 +150,7 @@ export function AuthForm({
         </div>
         <ResendVerificationForm callbackURL={postAuthDestination} initialEmail={verificationEmail} />
         <Link
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-800 px-5 py-3 text-center font-semibold text-white hover:bg-emerald-900"
+          className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-center font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           href={signInHref}
         >
           {producerIntent
@@ -176,7 +176,7 @@ export function AuthForm({
           </label>
           <input
             autoComplete="name"
-            className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 px-4 py-3"
+            className="mt-2 min-h-12 w-full rounded-xl border border-control-border bg-surface-muted px-4 py-3 text-slate-950 hover:border-slate-700 focus-visible:border-primary"
             id="name"
             maxLength={100}
             minLength={2}
@@ -192,7 +192,7 @@ export function AuthForm({
         <input
           autoCapitalize="none"
           autoComplete="email"
-          className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 px-4 py-3"
+          className="mt-2 min-h-12 w-full rounded-xl border border-control-border bg-surface-muted px-4 py-3 text-slate-950 hover:border-slate-700 focus-visible:border-primary"
           id="email"
           name="email"
           required
@@ -205,7 +205,7 @@ export function AuthForm({
         </label>
         <input
           autoComplete={isSignUp ? "new-password" : "current-password"}
-          className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 px-4 py-3"
+          className="mt-2 min-h-12 w-full rounded-xl border border-control-border bg-surface-muted px-4 py-3 text-slate-950 hover:border-slate-700 focus-visible:border-primary"
           id="password"
           maxLength={128}
           minLength={8}
@@ -221,13 +221,13 @@ export function AuthForm({
         )}
       </div>
       {message && (
-        <p className="text-sm text-red-800" id="auth-message" role="alert">
+        <p className="rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-950" id="auth-message" role="alert">
           {message}
         </p>
       )}
       <button
         aria-busy={pendingAction === "email"}
-        className="min-h-12 w-full rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 disabled:opacity-60"
+        className="min-h-12 w-full rounded-xl bg-primary px-5 py-3 font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:bg-slate-500"
         disabled={pendingAction !== null}
         type="submit"
       >
@@ -241,7 +241,7 @@ export function AuthForm({
         <button
           aria-label="Continuar con Google"
           aria-busy={pendingAction === "google"}
-          className="min-h-12 w-full rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+          className="min-h-12 w-full rounded-xl border border-control-border bg-surface px-5 py-3 font-semibold text-slate-900 transition-colors hover:bg-surface-muted focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-700"
           disabled={pendingAction !== null}
           onClick={signInWithGoogle}
           type="button"
@@ -251,7 +251,7 @@ export function AuthForm({
             : "Continuar con Google"}
         </button>
       ) : (
-        <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700" role="status">
+        <p className="rounded-xl border border-slate-300 bg-surface-muted p-3 text-sm text-slate-800" role="status">
           El acceso con Google no está disponible por ahora. Puedes continuar con tu correo.
         </p>
       )}
@@ -264,7 +264,7 @@ export function AuthForm({
       {!isSignUp && (
         <p className="text-center text-sm">
           <Link
-            className="inline-flex min-h-12 items-center font-semibold text-emerald-900 underline"
+            className="inline-flex min-h-12 items-center font-semibold text-primary underline hover:text-primary-hover"
             href="/recuperar-contrasena"
           >
             ¿Olvidaste tu contraseña?
@@ -274,7 +274,7 @@ export function AuthForm({
       <p className="text-center text-sm text-slate-700">
         {isSignUp ? "¿Ya tienes cuenta?" : "¿Primera vez por aquí?"}{" "}
         <Link
-          className="inline-flex min-h-12 items-center font-semibold text-emerald-900 underline"
+          className="inline-flex min-h-12 items-center font-semibold text-primary underline hover:text-primary-hover"
           href={authPageHref}
         >
           {isSignUp ? "Inicia sesión" : "Crea tu cuenta"}
@@ -282,8 +282,8 @@ export function AuthForm({
       </p>
     </form>
     {!isSignUp && (
-      <details className="mt-5 rounded-xl border border-slate-200 p-4" open={verificationEmail ? true : undefined}>
-        <summary className="min-h-11 cursor-pointer font-semibold text-emerald-900">¿No te llegó el correo de confirmación?</summary>
+      <details className="mt-5 rounded-xl border border-border bg-surface-muted p-4" open={verificationEmail ? true : undefined}>
+        <summary className="min-h-11 cursor-pointer font-semibold text-primary hover:text-primary-hover">¿No te llegó el correo de confirmación?</summary>
         <ResendVerificationForm callbackURL={postAuthDestination} initialEmail={verificationEmail} key={verificationEmail} />
       </details>
     )}

@@ -30,9 +30,9 @@ export function ResendVerificationForm({ callbackURL, initialEmail = "" }: { cal
     <form method="post" onSubmit={submit} aria-busy={pending} className="space-y-3">
       <label className="block text-sm font-medium">
         Correo para reenviar la confirmación
-        <input className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 px-4" autoComplete="email" defaultValue={initialEmail} name="email" required type="email" />
+        <input className="mt-2 min-h-12 w-full rounded-xl border border-control-border bg-surface-muted px-4 text-slate-950 hover:border-slate-700 focus-visible:border-primary" autoComplete="email" defaultValue={initialEmail} name="email" required type="email" />
       </label>
-      <button className="min-h-12 w-full rounded-xl border border-emerald-800 px-4 font-semibold text-emerald-950 disabled:opacity-60" disabled={pending} type="submit">
+      <button className="min-h-12 w-full rounded-xl border border-control-border bg-surface px-4 font-semibold text-foreground transition-colors hover:bg-secondary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-700" disabled={pending} type="submit">
         {pending ? <LoadingIndicator label="Solicitando enlace…" /> : "Reenviar enlace de confirmación"}
       </button>
       {message && <p className="text-sm text-slate-700" role="status">{message}</p>}

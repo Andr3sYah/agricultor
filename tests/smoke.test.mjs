@@ -176,7 +176,7 @@ test("production serves the offline worker, policy, and app manifest", async () 
 test("interactive controls expose a visible keyboard focus indicator", () => {
   assert.match(
     focusStyles,
-    /:focus-visible\s*\{\s*outline:\s*3px solid #166534;\s*outline-offset:\s*3px;/,
+    /:focus-visible\s*\{\s*outline:\s*3px solid #0f766e;\s*outline-offset:\s*3px;/,
   );
 });
 

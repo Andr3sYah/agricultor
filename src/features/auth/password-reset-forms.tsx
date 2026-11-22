@@ -49,7 +49,7 @@ export function RequestPasswordResetForm() {
         <input
           autoCapitalize="none"
           autoComplete="email"
-          className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 px-4 py-3"
+          className="mt-2 min-h-12 w-full rounded-xl border border-control-border bg-surface-muted px-4 py-3 text-slate-950 hover:border-slate-700 focus-visible:border-primary"
           id="email"
           name="email"
           required
@@ -57,12 +57,15 @@ export function RequestPasswordResetForm() {
         />
       </div>
       {message && (
-        <p className="text-sm text-slate-700" role="status">
+        <p
+          className="rounded-xl border border-slate-300 bg-surface-muted p-3 text-sm text-slate-800"
+          role="status"
+        >
           {message}
         </p>
       )}
       <button
-        className="min-h-12 w-full rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 disabled:opacity-60"
+        className="min-h-12 w-full rounded-xl bg-primary px-5 py-3 font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:bg-slate-500"
         disabled={pending}
         type="submit"
       >
@@ -70,7 +73,7 @@ export function RequestPasswordResetForm() {
       </button>
       <p className="text-center text-sm text-slate-700">
         <Link
-          className="inline-flex min-h-12 items-center font-semibold text-emerald-900 underline"
+          className="inline-flex min-h-12 items-center font-semibold text-primary underline hover:text-primary-hover"
           href="/iniciar-sesion"
         >
           Volver a iniciar sesión
@@ -147,14 +150,14 @@ export function ResetPasswordForm({ token }: { token: string }) {
           Este enlace no es válido o está incompleto. Solicita uno nuevo.
         </p>
         <Link
-          className="flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-800 px-5 py-3 text-center font-semibold text-white hover:bg-emerald-900"
+          className="flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-center font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           href="/recuperar-contrasena"
         >
           Solicitar otro enlace
         </Link>
         <p className="text-center text-sm text-slate-700">
           <Link
-            className="inline-flex min-h-12 items-center font-semibold text-emerald-900 underline"
+            className="inline-flex min-h-12 items-center font-semibold text-primary underline hover:text-primary-hover"
             href="/iniciar-sesion"
           >
             Volver a iniciar sesión
@@ -172,7 +175,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         </label>
         <input
           autoComplete="new-password"
-          className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 px-4 py-3"
+          className="mt-2 min-h-12 w-full rounded-xl border border-control-border bg-surface-muted px-4 py-3 text-slate-950 hover:border-slate-700 focus-visible:border-primary aria-[invalid=true]:border-rose-700"
           id="password"
           maxLength={128}
           minLength={8}
@@ -200,7 +203,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         </label>
         <input
           autoComplete="new-password"
-          className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 px-4 py-3"
+          className="mt-2 min-h-12 w-full rounded-xl border border-control-border bg-surface-muted px-4 py-3 text-slate-950 hover:border-slate-700 focus-visible:border-primary aria-[invalid=true]:border-rose-700"
           id="confirmation"
           maxLength={128}
           minLength={8}
@@ -220,13 +223,13 @@ export function ResetPasswordForm({ token }: { token: string }) {
         />
       </div>
       {passwordMismatch && (
-        <p className="text-sm text-red-800" id="password-mismatch" role="alert">
+        <p className="rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-950" id="password-mismatch" role="alert">
           Las contraseñas no coinciden.
         </p>
       )}
       {message && (
         <p
-          className={success ? "text-sm text-emerald-900" : "text-sm text-red-800"}
+          className={success ? "rounded-xl border border-emerald-300 bg-surface-accent p-3 text-sm text-emerald-950" : "rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-950"}
           role={success ? "status" : "alert"}
         >
           {message}
@@ -234,14 +237,14 @@ export function ResetPasswordForm({ token }: { token: string }) {
       )}
       {success ? (
         <Link
-          className="flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-800 px-5 py-3 text-center font-semibold text-white hover:bg-emerald-900"
+          className="flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-center font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           href="/iniciar-sesion"
         >
           Iniciar sesión
         </Link>
       ) : (
         <button
-          className="min-h-12 w-full rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 disabled:opacity-60"
+          className="min-h-12 w-full rounded-xl bg-primary px-5 py-3 font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:bg-slate-500"
           disabled={pending}
           type="submit"
         >
@@ -251,7 +254,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       {!success && (
         <p className="text-center text-sm text-slate-700">
           <Link
-            className="inline-flex min-h-12 items-center font-semibold text-emerald-900 underline"
+            className="inline-flex min-h-12 items-center font-semibold text-primary underline hover:text-primary-hover"
             href="/recuperar-contrasena"
           >
             Solicitar otro enlace
