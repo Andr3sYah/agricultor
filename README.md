@@ -43,6 +43,12 @@ redirección autorizadas en las credenciales de Google:
 - Desarrollo local: `http://localhost:3000/api/auth/callback/google`
 - Producción de Vercel: `https://agricultor-blond.vercel.app/api/auth/callback/google`
 
+Google bloquea el inicio de sesión desde algunos navegadores integrados en
+aplicaciones. Si aparece el aviso de compatibilidad, abre el sitio directamente
+en Safari o Chrome y vuelve a intentarlo. El callback conserva el dominio
+original, por lo que la URI autorizada debe coincidir con el dominio desde el
+que se inicia el acceso.
+
 La URI de producción corresponde al endpoint de callback predeterminado de
 Better Auth (`/api/auth/callback/google`). Si el dominio de producción de
 Vercel cambia, actualiza esta URI con el nuevo dominio. Si habilitas Google en

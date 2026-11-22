@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { authClient } from "@/lib/auth-client";
 import { LoadingIndicator } from "@/components/loading-indicator";
+import { isInAppBrowser } from "./oauth-browser";
 import { ResendVerificationForm } from "./resend-verification-form";
 
 type AuthFormProps = {
@@ -83,6 +84,13 @@ export function AuthForm({
   }
 
   async function signInWithGoogle() {
+    if (isInAppBrowser(window.navigator.userAgent)) {
+      setMessage(
+        "Google no permite iniciar sesión desde el navegador integrado de esta aplicación. Abre este sitio en Safari o Chrome y vuelve a intentarlo.",
+      );
+      return;
+    }
+
     setPendingAction("google");
     setMessage("");
 

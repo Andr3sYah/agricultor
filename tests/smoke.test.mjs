@@ -270,6 +270,8 @@ test("Google sign-in is available with safe account linking and clear password r
   );
   assert.doesNotMatch(authConfig, /trustedProviders/);
   assert.match(authForm, /authClient\.signIn\.social\(\{\s*provider: "google"/);
+  assert.match(authForm, /isInAppBrowser\(window\.navigator\.userAgent\)/);
+  assert.match(authForm, /Google no permite iniciar sesi\u00f3n desde el navegador integrado/);
   assert.match(authForm, /callbackURL: postAuthDestination/);
   assert.match(authForm, /Continuar con Google/);
   assert.match(authForm, /Conectando con Google/);
