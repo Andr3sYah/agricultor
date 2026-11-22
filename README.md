@@ -41,11 +41,12 @@ comprar y consultar sus pedidos. Para Google OAuth, registra estas URI de
 redirección autorizadas en las credenciales de Google:
 
 - Desarrollo local: `http://localhost:3000/api/auth/callback/google`
-- Producción de Vercel: `https://<VERCEL_PROJECT_PRODUCTION_URL>/api/auth/callback/google`
+- Producción de Vercel: `https://agricultor-blond.vercel.app/api/auth/callback/google`
 
-`VERCEL_PROJECT_PRODUCTION_URL` debe reemplazarse por el dominio de producción
-asignado al proyecto (sin `https://`). Si habilitas Google en un dominio de
-preview, registra también la URI exacta de ese dominio.
+La URI de producción corresponde al endpoint de callback predeterminado de
+Better Auth (`/api/auth/callback/google`). Si el dominio de producción de
+Vercel cambia, actualiza esta URI con el nuevo dominio. Si habilitas Google en
+un dominio de preview, registra también la URI exacta de ese dominio.
 
 La opción
 **Vender productos** abre el inventario de esa misma cuenta. Quienes tengan el
