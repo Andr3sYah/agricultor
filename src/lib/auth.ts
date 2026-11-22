@@ -134,6 +134,7 @@ function createAuth() {
       updateAge: 60 * 60 * 24,
     },
     rateLimit: {
+      enabled: !e2eBaseURL,
       storage: "database",
       customRules: {
         "/sign-in/email": {

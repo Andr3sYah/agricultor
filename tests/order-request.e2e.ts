@@ -272,22 +272,42 @@ async function main(): Promise<void> {
     const producerVerification = await waitForAccountEmail(brevoStub.messages, producerEmail, "/verify-email?");
     const producerVerificationUrl = producerVerification.textContent.match(/https?:\/\/\S+/)?.[0];
     assert.ok(producerVerificationUrl);
-    assert.ok((await producerApi.get(producerVerificationUrl)).ok());
+    const producerVerificationResponse = await producerApi.get(
+      producerVerificationUrl,
+    );
+    assert.ok(
+      producerVerificationResponse.ok(),
+      `Producer verification failed: ${await producerVerificationResponse.text()}`,
+    );
     const producerSession = await producerApi.get("/api/auth/get-session");
-    assert.equal(producerSession.ok(), true);
+    assert.equal(
+      producerSession.status(),
+      200,
+      `Producer session lookup failed: ${await producerSession.text()}`,
+    );
     const producerSessionData = await producerSession.json();
     assert.ok(
       producerSessionData,
       "Email verification should establish a producer session.",
     );
     assert.equal(producerSessionData.user.email, producerEmail);
-    const producerSignout = await producerApi.post("/api/auth/sign-out");
-    assert.equal(producerSignout.ok(), true);
+    const producerSignout = await producerApi.post("/api/auth/sign-out", {
+      data: {},
+    });
+    assert.equal(
+      producerSignout.status(),
+      200,
+      `Producer sign-out failed: ${await producerSignout.text()}`,
+    );
     assert.equal(await (await producerApi.get("/api/auth/get-session")).json(), null);
     const producerSignin = await producerApi.post("/api/auth/sign-in/email", {
       data: { email: producerEmail, password: producerPassword },
     });
-    assert.equal(producerSignin.ok(), true);
+    assert.equal(
+      producerSignin.status(),
+      200,
+      `Producer sign-in failed: ${await producerSignin.text()}`,
+    );
     assert.equal(
       (await (await producerApi.get("/api/auth/get-session")).json()).user.email,
       producerEmail,
@@ -498,7 +518,7 @@ async function main(): Promise<void> {
       await googleButton.click();
       await expect(googleButton).toContainText("Conectando con Google");
       releaseGoogleError();
-      await expect(googlePage.getByRole("alert")).toContainText(
+      await expect(googlePage.locator("#auth-message")).toContainText(
         /No pudimos (iniciar sesión|conectarnos) con Google/,
       );
       await googlePage.close();
