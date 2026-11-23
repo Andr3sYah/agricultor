@@ -15,11 +15,10 @@ export function SiteHeader({
         Agricultor
       </Link>
       <Link
-        aria-label={authenticated ? "Ir a Mi cuenta" : undefined}
         className="inline-flex min-h-12 items-center px-2 text-right text-sm font-bold text-primary underline decoration-primary underline-offset-4 hover:text-primary-hover sm:text-base"
         href={authenticated ? "/mi-cuenta" : "/iniciar-sesion"}
       >
-        {authenticated ? "Mi cuenta" : "Inicia sesión"}
+        {authenticated ? "Inicio" : "Inicia sesión"}
       </Link>
     </header>
   );
