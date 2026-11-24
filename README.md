@@ -31,11 +31,12 @@ La aplicación local se sirve en `http://localhost:3000`.
   ejecutarse sin estas credenciales; para enviar correos, configura estas dos
   variables y usa una dirección remitente verificada en Brevo.
 - `CRON_SECRET`: secreto aleatorio requerido para que el cron de Vercel procese
-  el outbox de notificaciones cada cinco minutos. La app intenta enviar al
-  guardar el pedido; los errores recuperables se reintentan y los resultados
-  ambiguos quedan registrados sin reenvío automático para evitar duplicados.
-  El estado se muestra en el seguimiento del pedido. Nunca registres la clave
-  ni direcciones de correo en logs.
+  el outbox de notificaciones una vez al día. La app intenta enviar al guardar
+  el pedido; los errores recuperables se reintentan en el siguiente cron y los
+  resultados ambiguos quedan registrados sin reenvío automático para evitar
+  duplicados. En Vercel Hobby la hora puede variar hasta 59 minutos y un
+  reintento puede tardar casi un día; el estado se muestra en el seguimiento
+  del pedido. Nunca registres la clave ni direcciones de correo en logs.
 - El registro manual requiere confirmar el correo. Al abrir el enlace,
   Better Auth inicia la sesión automáticamente.
 - En Vercel, Better Auth usa los dominios de implementación que entrega el
@@ -104,6 +105,9 @@ manualmente cualquier cambio. La preferencia no bloquea pedidos de ofertas con
 precio ingresado manualmente. El precio publicado se presenta como referencia
 del productor, no como una cotización oficial ni una garantía.
 La fuente consultable es el [boletín diario de precios mayoristas de SIPSA](https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa/componente-precios-mayoristas).
+No hay descarga automática ni cron de precios: la programación de Vercel Hobby
+admite como máximo una ejecución diaria, con precisión horaria de ±59 minutos;
+no se habilita un servicio de pago para actualizar referencias.
 
 Los cambios manuales de precio guardan un historial transaccional con valor
 anterior y nuevo, actor productor, observación y aplicación. Requieren la
