@@ -55,6 +55,10 @@ export default async function ProductsPage() {
           Registra tu oferta y publícala en el catálogo cuando esté lista. Las
           solicitudes recibidas aparecerán en el seguimiento de pedidos.
         </p>
+        <p className="mt-2 text-sm text-slate-700">
+          «Disponible» o «Agotado» indica si tienes existencias. «Publicado» o
+          «Privado» indica si las personas pueden ver tu oferta en el catálogo.
+        </p>
         <nav
           aria-label="Acciones de productor"
           className="mt-4 flex flex-wrap gap-4"
@@ -75,9 +79,11 @@ export default async function ProductsPage() {
         <ProductForm />
       </section>
       <section className="mt-8 rounded-3xl border border-emerald-950/10 bg-white p-5 shadow-sm sm:p-12">
-        <h2 className="text-2xl font-semibold">Productos guardados</h2>
+        <h2 className="text-2xl font-semibold">Tus productos</h2>
         {products.length === 0 ? (
-          <p className="mt-4 text-slate-700">Aún no tienes productos registrados.</p>
+          <p className="mt-4 text-slate-700">
+            Todavía no agregas productos. Usa el formulario de arriba para registrar tu primera oferta.
+          </p>
         ) : (
           <ul className="mt-5 space-y-4">
             {products.map((product) => {

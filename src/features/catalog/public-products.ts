@@ -25,6 +25,9 @@ export type CatalogFilters = {
   name?: string;
   category?: (typeof PRODUCT_CATEGORIES)[number]["value"];
   municipality?: string;
+  minimumPrice?: number;
+  maximumPrice?: number;
+  priceFilterError?: string;
   sort?: CatalogSort;
   unit?: (typeof PRODUCT_UNITS)[number]["value"];
   minimumQuantity?: string;
@@ -70,6 +73,24 @@ export function parseCatalogFilters(
   const minimumQuantity = unit && requestedQuantity && Number(requestedQuantity) > 0
     ? requestedQuantity
     : undefined;
+  const rawMinimumPrice = searchParams.precioMin;
+  const rawMaximumPrice = searchParams.precioMax;
+  const minimumPrice = parseCatalogPrice(rawMinimumPrice);
+  const maximumPrice = parseCatalogPrice(rawMaximumPrice);
+  let priceFilterError: string | undefined;
+  if (
+    (hasCatalogPriceValue(rawMinimumPrice) && minimumPrice === undefined) ||
+    (hasCatalogPriceValue(rawMaximumPrice) && maximumPrice === undefined)
+  ) {
+    priceFilterError =
+      "Escribe precios enteros entre $1 y $2.147.483.647 COP.";
+  } else if (
+    minimumPrice !== undefined &&
+    maximumPrice !== undefined &&
+    minimumPrice > maximumPrice
+  ) {
+    priceFilterError = "El precio mínimo no puede superar el precio máximo.";
+  }
   const sort =
     rawSort === "precio-asc" || rawSort === "precio-desc"
       ? rawSort
@@ -78,19 +99,47 @@ export function parseCatalogFilters(
   return {
     ...(name ? { name } : {}),
     category, municipality, sort, page,
+    ...(priceFilterError
+      ? { priceFilterError }
+      : {
+          ...(minimumPrice !== undefined ? { minimumPrice } : {}),
+          ...(maximumPrice !== undefined ? { maximumPrice } : {}),
+        }),
     ...(unit ? { unit } : {}),
     ...(minimumQuantity ? { minimumQuantity } : {}),
   };
 }
 
+function hasCatalogPriceValue(value: string | string[] | undefined): boolean {
+  return value !== undefined && (Array.isArray(value) || value.trim() !== "");
+}
+
+function parseCatalogPrice(value: string | string[] | undefined): number | undefined {
+  if (typeof value !== "string" || !/^\d{1,10}$/.test(value.trim())) {
+    return undefined;
+  }
+
+  const price = Number(value.trim());
+  return price >= 1 && price <= 2_147_483_647 ? price : undefined;
+}
+
 export function getPublicProductWhere(
-  filters: Pick<CatalogFilters, "name" | "category" | "municipality" | "unit" | "minimumQuantity">,
+  filters: Pick<
+    CatalogFilters,
+    "name" | "category" | "municipality" | "unit" | "minimumQuantity" | "minimumPrice" | "maximumPrice"
+  >,
 ) {
+  const priceCOP = {
+    ...(filters.minimumPrice !== undefined ? { gte: filters.minimumPrice } : {}),
+    ...(filters.maximumPrice !== undefined ? { lte: filters.maximumPrice } : {}),
+  };
+
   return {
     isPublished: true,
     availableQuantity: filters.unit && filters.minimumQuantity
       ? { gte: filters.minimumQuantity }
       : { gt: 0 },
+    ...(Object.keys(priceCOP).length > 0 ? { priceCOP } : {}),
     ...(filters.unit ? { unit: filters.unit } : {}),
     ...(filters.name
       ? {
@@ -147,6 +196,12 @@ function getCatalogQuery(
   if (filters.category) searchParams.set("categoria", filters.category);
   if (filters.municipality) {
     searchParams.set("municipio", filters.municipality);
+  }
+  if (filters.minimumPrice !== undefined) {
+    searchParams.set("precioMin", String(filters.minimumPrice));
+  }
+  if (filters.maximumPrice !== undefined) {
+    searchParams.set("precioMax", String(filters.maximumPrice));
   }
   if (filters.sort) searchParams.set("orden", filters.sort);
   if (filters.unit) {
