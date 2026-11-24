@@ -7,7 +7,7 @@ import { OrderDeliveryConfirmationForm } from "@/features/orders/order-delivery-
 import { isOrderReceiptAvailable } from "@/features/orders/order-receipt";
 import { OrderRatingForm, OrderReceiptForm } from "@/features/orders/order-receipt-forms";
 import { ExternalPaymentForm } from "@/features/orders/external-payment-form";
-import { isExternalPaymentAvailable, isPaymentReceiptAvailable, paymentLabels } from "@/features/orders/external-payment";
+import { isExternalPaymentAvailable, isPaymentEventAvailable, isPaymentReceiptAvailable, paymentLabels } from "@/features/orders/external-payment";
 import { PaymentReceiptForm } from "@/features/orders/payment-receipt-form";
 import { OrderDeliveryForm } from "@/features/orders/order-delivery-form";
 import { isOrderSellerContactAvailable } from "@/features/orders/order-seller-contact";
@@ -135,10 +135,10 @@ export default async function OrdersPage({
 
   const acceptedOrderIds = [...buyerOrders, ...producerOrders]
     .filter(({ status }) => status === "ACCEPTED").map(({ id }) => id);
-  const [contactsAvailable, deliveryAvailable, confirmationAvailable, receiptAvailable, paymentAvailable, paymentReceiptAvailable] = acceptedOrderIds.length > 0
-    ? await Promise.all([isOrderSellerContactAvailable(), isOrderDeliveryAvailable(), isDeliveryConfirmationAvailable(), isOrderReceiptAvailable(), isExternalPaymentAvailable(), isPaymentReceiptAvailable()])
-    : [false, false, false, false, false, false];
-  const [contacts, deliveries, receipts, paymentReceipts] = await Promise.all([
+  const [contactsAvailable, deliveryAvailable, confirmationAvailable, receiptAvailable, paymentAvailable, paymentReceiptAvailable, paymentEventAvailable] = acceptedOrderIds.length > 0
+    ? await Promise.all([isOrderSellerContactAvailable(), isOrderDeliveryAvailable(), isDeliveryConfirmationAvailable(), isOrderReceiptAvailable(), isExternalPaymentAvailable(), isPaymentReceiptAvailable(), isPaymentEventAvailable()])
+    : [false, false, false, false, false, false, false];
+  const [contacts, deliveries, receipts, paymentReceipts, paymentEvents] = await Promise.all([
     contactsAvailable ? prisma.orderSellerContact.findMany({
       where: { orderId: { in: acceptedOrderIds } },
       select: { orderId: true, whatsapp: true },
@@ -160,8 +160,26 @@ export default async function OrdersPage({
     paymentReceiptAvailable ? prisma.orderPaymentReceipt.findMany({
       where: { orderId: { in: acceptedOrderIds } },
     }) : [],
+    paymentEventAvailable ? prisma.orderPaymentEvent.findMany({
+      where: { orderId: { in: acceptedOrderIds } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        orderId: true,
+        provider: true,
+        method: true,
+        externalReference: true,
+        amountCOP: true,
+        currency: true,
+        status: true,
+        createdAt: true,
+      },
+    }) : [],
   ]);
   const paymentReceiptByOrder = new Map(paymentReceipts.map((record) => [record.orderId, record]));
+  const paymentEventsByOrder = new Map<string, typeof paymentEvents>();
+  for (const event of paymentEvents) {
+    paymentEventsByOrder.set(event.orderId, [...(paymentEventsByOrder.get(event.orderId) ?? []), event]);
+  }
   const deliveryByOrder = new Map(deliveries.map((delivery) => [delivery.orderId, delivery]));
   const receiptByOrder = new Map(receipts.map((receipt) => [receipt.orderId, receipt]));
   const contactByOrder = new Map(contacts.map(({ orderId, whatsapp }) => [orderId, whatsapp]));
@@ -195,6 +213,7 @@ export default async function OrdersPage({
     const whatsapp = contactByOrder.get(order.id);
     const delivery = deliveryByOrder.get(order.id);
     const paymentReceipt = paymentReceiptByOrder.get(order.id);
+    const paymentEventsForOrder = paymentEventsByOrder.get(order.id) ?? [];
     const receipt = receiptByOrder.get(order.id);
     const confirmed = delivery && "confirmed" in delivery && delivery.confirmed === true;
     const payment = delivery && "paymentMethod" in delivery && typeof delivery.paymentMethod === "string"
@@ -389,6 +408,14 @@ export default async function OrdersPage({
             <TrackingHeading className="font-semibold">Pago confirmado por el vendedor</TrackingHeading>
             <p>{paymentLabels[paymentReceipt.method as keyof typeof paymentLabels]} · $ {formatAgriculturalValue(String(paymentReceipt.amountCOP))} COP</p>
             <p className="text-sm text-slate-700">{dateFormatter.format(paymentReceipt.confirmedAt)}</p>
+            {paymentEventsForOrder.map((event) => (
+              <div className="border-t border-emerald-200 pt-2 text-sm text-slate-700" key={`${event.orderId}-${event.createdAt.toISOString()}`}>
+                <p>Registro: {event.status === "CONFIRMED" ? "confirmado manualmente por el vendedor" : event.status}</p>
+                <p>Proveedor: {event.provider === "WOMPI" ? "Wompi (confirmación manual)" : "Pago acordado directamente"}</p>
+                {event.externalReference && <p>Referencia: {event.externalReference}</p>}
+                <p>Fecha del registro: {dateFormatter.format(event.createdAt)}</p>
+              </div>
+            ))}
           </section>
         ) : paymentAvailable && delivery && confirmed && order.status === "ACCEPTED" && (
           <>

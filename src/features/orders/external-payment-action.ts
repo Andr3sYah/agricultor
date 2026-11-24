@@ -1,10 +1,11 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { Prisma, type OrderDeliveryDetails } from "@/generated/prisma/client";
 import { getCurrentIdentity } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
-import { hasPaymentReceipt, isExternalPaymentAvailable, isPaymentReceiptAvailable, parseWompiPaymentLink } from "./external-payment";
+import { hasPaymentReceipt, isExternalPaymentAvailable, isPaymentEventAvailable, isPaymentReceiptAvailable, parsePaymentReference, parseWompiPaymentLink } from "./external-payment";
 
 type PaymentState = { message: string; ok?: boolean };
 
@@ -64,10 +65,17 @@ export async function confirmExternalPayment(
   method: string,
   wompiUrl: string | null,
   expectedAmountCOP: string,
+  _previous: PaymentState,
+  form: FormData,
 ): Promise<PaymentState> {
   const actor = await getCurrentIdentity();
   if (!actor?.roles.includes("PRODUCER")) return { message: "Necesitas el perfil de vendedor." };
-  if (!await isPaymentReceiptAvailable()) return { message: "Esta opción todavía no está disponible." };
+  if (!await isPaymentReceiptAvailable() || !await isPaymentEventAvailable()) return { message: "Esta opción todavía no está disponible." };
+  const paymentReference = parsePaymentReference(form.get("paymentReference"));
+  if (form.get("paymentReference") && !paymentReference) {
+    return { message: "La referencia debe tener hasta 120 caracteres (letras, números, punto, guion, dos puntos, barra o guion bajo)." };
+  }
+  const provider = method === "WOMPI" ? "WOMPI" : "MANUAL";
   const [result] = await prisma.$queryRaw<{ eligible: boolean }[]>`
     WITH agreed AS (
       SELECT p."orderId", p."method",
@@ -83,8 +91,20 @@ export async function confirmExternalPayment(
       INSERT INTO "OrderPaymentReceipt" ("orderId", "method", "amountCOP")
       SELECT "orderId", "method", amount FROM agreed
       ON CONFLICT ("orderId") DO NOTHING
+      RETURNING "orderId", "method", "amountCOP", "confirmedAt"
+    ), audited AS (
+      INSERT INTO "OrderPaymentEvent" (
+        "id", "orderId", "actorId", "provider", "method", "externalReference",
+        "amountCOP", "currency", "status", "idempotencyKey", "createdAt"
+      )
+      SELECT ${randomUUID()}, recorded."orderId", ${actor.userId}, ${provider},
+        recorded."method", ${paymentReference}, recorded."amountCOP", 'COP',
+        'CONFIRMED', 'manual-confirm:' || recorded."orderId", recorded."confirmedAt"
+      FROM recorded
+      ON CONFLICT ("orderId", "idempotencyKey") DO NOTHING
+      RETURNING "orderId"
     )
-    SELECT EXISTS (SELECT 1 FROM agreed) AS eligible
+    SELECT EXISTS (SELECT 1 FROM audited) AS eligible
   `;
   revalidatePath("/mi-cuenta/pedidos");
   return result.eligible
