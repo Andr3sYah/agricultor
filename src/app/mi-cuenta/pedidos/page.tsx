@@ -111,6 +111,9 @@ export default async function OrdersPage({
                 createdAt: true,
               },
             },
+            notifications: {
+              select: { type: true, status: true },
+            },
           },
         })
       : Promise.resolve([]),
@@ -229,6 +232,14 @@ export default async function OrdersPage({
     const currentOffer = !producerView && order.status === "ACCEPTED" && "product" in order
       ? order.product
       : null;
+    const currentNotificationType = order.status === "ACCEPTED"
+      ? "REQUEST_ACCEPTED"
+      : order.status === "REJECTED"
+        ? "REQUEST_REJECTED"
+        : "REQUEST_CREATED";
+    const notificationStatus = "notifications" in order
+      ? order.notifications.find(({ type }) => type === currentNotificationType)?.status
+      : undefined;
 
     return (
       <li
@@ -240,6 +251,26 @@ export default async function OrdersPage({
         {!producerView && registeredOrder === order.id && (
           <p className="mb-3 rounded-xl bg-emerald-50 p-3 text-emerald-950" role="status">
             Tu solicitud está registrada.
+            {notificationStatus === "SENT"
+              ? " Enviamos un correo al vendedor."
+              : notificationStatus === "PENDING" ||
+                  notificationStatus === "RETRY" ||
+                  notificationStatus === "SENDING"
+                ? " El correo al vendedor está pendiente; puede ver la solicitud en sus avisos de pedidos."
+                : notificationStatus
+                ? " No pudimos confirmar el correo; el vendedor también puede ver la solicitud en sus avisos de pedidos."
+                : ""}
+          </p>
+        )}
+        {!producerView && notificationStatus && registeredOrder !== order.id && (
+          <p className="mb-3 rounded-xl bg-slate-50 p-3 text-slate-800" role="status">
+            {notificationStatus === "SENT"
+              ? "Enviamos un correo sobre esta actualización."
+              : notificationStatus === "PENDING" ||
+                  notificationStatus === "RETRY" ||
+                  notificationStatus === "SENDING"
+                ? "El correo sobre esta actualización está pendiente; puedes consultar el estado aquí."
+                : "El correo sobre esta actualización no pudo confirmarse. Puedes consultar el estado aquí."}
           </p>
         )}
         <div className="flex flex-wrap items-start justify-between gap-3">

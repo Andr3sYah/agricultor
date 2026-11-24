@@ -3,8 +3,13 @@ import { redirect } from "next/navigation";
 import { ProductForm } from "@/features/products/product-form";
 import { canManageProducts } from "@/features/products/product-access";
 import { PublicationToggle } from "@/features/products/publication-toggle";
-import { updateProductAvailability, updateProductPrice } from "@/features/products/product-actions";
+import {
+  setProductPriceReferenceOptIn,
+  updateProductAvailability,
+  updateProductPrice,
+} from "@/features/products/product-actions";
 import { QuickProductFieldForm } from "@/features/products/quick-product-field-form";
+import { PriceReferenceOptIn } from "@/features/products/price-reference-opt-in";
 import {
   getAvailabilityLabel,
   PRODUCT_CATEGORIES,
@@ -145,6 +150,11 @@ export default async function ProductsPage() {
                     productId={product.id}
                     saveAction={updateProductPrice.bind(null, product.id, product.unit, product.priceCOP)}
                     value={String(product.priceCOP)}
+                  />
+                  <PriceReferenceOptIn
+                    action={setProductPriceReferenceOptIn}
+                    enabled={product.priceReferenceEnabled}
+                    productId={product.id}
                   />
                   <QuickProductFieldForm
                     field="availableQuantity"

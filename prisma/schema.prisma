@@ -21,6 +21,21 @@ enum OrderStatus {
   REJECTED
 }
 
+enum OrderNotificationType {
+  REQUEST_CREATED
+  REQUEST_ACCEPTED
+  REQUEST_REJECTED
+}
+
+enum OrderNotificationStatus {
+  PENDING
+  SENDING
+  SENT
+  RETRY
+  FAILED
+  UNKNOWN
+}
+
 model User {
   id            String     @id
   name          String
@@ -107,21 +122,22 @@ model UserRole {
 }
 
 model Product {
-  id                String   @id @default(cuid())
-  ownerId           String
-  owner             User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name              String   @db.VarChar(100)
-  category          String   @db.VarChar(40)
-  availableQuantity Decimal  @db.Decimal(12, 3)
-  reservedQuantity  Decimal  @default(0) @db.Decimal(12, 3)
-  unit              String   @db.VarChar(30)
-  priceCOP          Int
-  municipality      String   @db.VarChar(100)
-  isPublished       Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  orders            Order[]
-  favorites         Favorite[]
+  id                    String   @id @default(cuid())
+  ownerId               String
+  owner                 User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name                  String   @db.VarChar(100)
+  category              String   @db.VarChar(40)
+  availableQuantity     Decimal  @db.Decimal(12, 3)
+  reservedQuantity      Decimal  @default(0) @db.Decimal(12, 3)
+  unit                  String   @db.VarChar(30)
+  priceCOP              Int
+  municipality          String   @db.VarChar(100)
+  isPublished           Boolean  @default(false)
+  priceReferenceEnabled Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  orders                Order[]
+  favorites             Favorite[]
 
   @@index([ownerId, updatedAt])
 }
@@ -160,11 +176,29 @@ model Order {
   receipt            OrderReceipt?
   paymentReceipt     OrderPaymentReceipt?
   paymentEvents      OrderPaymentEvent[]
+  notifications      OrderNotification[]
 
   @@index([buyerId, createdAt])
   @@index([producerId, status, createdAt])
   @@index([productId])
   @@unique([buyerId, idempotencyKey])
+}
+
+model OrderNotification {
+  id            String                  @id @default(cuid())
+  orderId       String
+  order         Order                   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type          OrderNotificationType
+  status        OrderNotificationStatus @default(PENDING)
+  attempts      Int                     @default(0)
+  nextAttemptAt DateTime                @default(now())
+  sentAt        DateTime?
+  lastErrorCode String?                 @db.VarChar(60)
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  @@unique([orderId, type])
+  @@index([status, nextAttemptAt])
 }
 
 model OrderPaymentReceipt {

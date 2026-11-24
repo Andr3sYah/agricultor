@@ -48,6 +48,23 @@ describe(
     let contestedProductId: string;
     let idempotentProductId: string;
     let fixtureUserIds: string[] = [];
+    const requestOrderWithoutEmail = (
+      actor: OrderActor,
+      input: Record<string, unknown>,
+    ) =>
+      requestOrder(actor, input, database, {
+        appBaseUrl: "https://agricultor.example.test",
+        sendEmail: async () => {},
+      });
+    const decideOrderWithoutEmail = (
+      actor: OrderActor,
+      orderId: string,
+      decision: string,
+    ) =>
+      decideOrder(actor, orderId, decision, database, {
+        appBaseUrl: "https://agricultor.example.test",
+        sendEmail: async () => {},
+      });
 
     before(async () => {
       assertDisposableLocalDatabase(testDatabaseUrl!);
@@ -66,6 +83,7 @@ describe(
           id,
           name: "Prueba de integración",
           email: `${id}@example.test`,
+          emailVerified: true,
         })),
       });
       await database.userRole.createMany({
@@ -173,13 +191,13 @@ describe(
     });
 
     it("persists a request, its history, and rejected stock release", async () => {
-      const staleUnit = await requestOrder(buyerOne, {
+      const staleUnit = await requestOrderWithoutEmail(buyerOne, {
         productId: reservedProductId,
         quantity: "2.5",
         expectedUnit: "BULTO",
         expectedPriceCOP: "1000",
         idempotencyKey: newIdempotencyKey(),
-      }, database);
+      });
       assert.deepEqual(staleUnit, { ok: false, code: "offer-changed" });
       const inventoryBeforeRequest = await database.product.findUniqueOrThrow({
         where: { id: reservedProductId },
@@ -187,7 +205,7 @@ describe(
       assert.ok(inventoryBeforeRequest.availableQuantity.equals("5"));
       assert.ok(inventoryBeforeRequest.reservedQuantity.equals("0"));
 
-      const request = await requestOrder(
+      const request = await requestOrderWithoutEmail(
         buyerOne,
         {
           productId: reservedProductId,
@@ -196,7 +214,6 @@ describe(
           quantity: "2.5",
           idempotencyKey: newIdempotencyKey(),
         },
-        database,
       );
       assert.equal(request.ok, true);
       if (!request.ok) return;
@@ -216,22 +233,20 @@ describe(
       assert.ok(reserved.reservedQuantity.equals("2.5"));
 
       const decisions = await Promise.all([
-        decideOrder(producer, request.orderId, "REJECTED", database),
-        decideOrder(producer, request.orderId, "REJECTED", database),
+        decideOrderWithoutEmail(producer, request.orderId, "REJECTED"),
+        decideOrderWithoutEmail(producer, request.orderId, "REJECTED"),
       ]);
       assert.deepEqual(decisions.map(({ ok }) => ok), [true, true]);
-      const retriedDecision = await decideOrder(
+      const retriedDecision = await decideOrderWithoutEmail(
         producer,
         request.orderId,
         "REJECTED",
-        database,
       );
       assert.equal(retriedDecision.ok, true);
-      const oppositeDecision = await decideOrder(
+      const oppositeDecision = await decideOrderWithoutEmail(
         producer,
         request.orderId,
         "ACCEPTED",
-        database,
       );
       assert.deepEqual(oppositeDecision, {
         ok: false,
@@ -255,7 +270,7 @@ describe(
     it("replays concurrent requests by buyer key without reserving twice", async () => {
       const idempotencyKey = newIdempotencyKey();
       const requests = await Promise.all([
-        requestOrder(
+        requestOrderWithoutEmail(
           buyerOne,
           {
             productId: idempotentProductId,
@@ -264,9 +279,8 @@ describe(
             quantity: "2",
             idempotencyKey,
           },
-          database,
         ),
-        requestOrder(
+        requestOrderWithoutEmail(
           buyerOne,
           {
             productId: idempotentProductId,
@@ -275,7 +289,6 @@ describe(
             quantity: "2,000",
             idempotencyKey,
           },
-          database,
         ),
       ]);
 
@@ -283,8 +296,14 @@ describe(
       assert.equal(requests[1].ok, true);
       if (!requests[0].ok || !requests[1].ok) return;
       assert.equal(requests[0].orderId, requests[1].orderId);
+      assert.equal(
+        await database.orderNotification.count({
+          where: { orderId: requests[0].orderId, type: "REQUEST_CREATED" },
+        }),
+        1,
+      );
 
-      const replay = await requestOrder(
+      const replay = await requestOrderWithoutEmail(
         buyerOne,
         {
           productId: idempotentProductId,
@@ -293,11 +312,10 @@ describe(
           quantity: "2.000",
           idempotencyKey,
         },
-        database,
       );
       assert.deepEqual(replay, requests[0]);
 
-      const differentBuyerRequest = await requestOrder(
+      const differentBuyerRequest = await requestOrderWithoutEmail(
         buyerTwo,
         {
           productId: idempotentProductId,
@@ -306,13 +324,12 @@ describe(
           quantity: "1",
           idempotencyKey,
         },
-        database,
       );
       assert.equal(differentBuyerRequest.ok, true);
       if (!differentBuyerRequest.ok) return;
       assert.notEqual(differentBuyerRequest.orderId, requests[0].orderId);
 
-      const conflictingPayload = await requestOrder(
+      const conflictingPayload = await requestOrderWithoutEmail(
         buyerOne,
         {
           productId: idempotentProductId,
@@ -321,7 +338,6 @@ describe(
           quantity: "2.5",
           idempotencyKey,
         },
-        database,
       );
       assert.deepEqual(conflictingPayload, {
         ok: false,
@@ -348,7 +364,7 @@ describe(
 
     it("allows only one concurrent request for the final unit", async () => {
       const requests = await Promise.all([
-        requestOrder(
+        requestOrderWithoutEmail(
           buyerOne,
           {
             productId: contestedProductId,
@@ -357,9 +373,8 @@ describe(
             quantity: "1",
             idempotencyKey: newIdempotencyKey(),
           },
-          database,
         ),
-        requestOrder(
+        requestOrderWithoutEmail(
           buyerTwo,
           {
             productId: contestedProductId,
@@ -368,7 +383,6 @@ describe(
             quantity: "1",
             idempotencyKey: newIdempotencyKey(),
           },
-          database,
         ),
       ]);
       const successful = requests.filter((request) => request.ok);
@@ -389,11 +403,10 @@ describe(
 
       const [request] = successful;
       if (request.ok) {
-        const accepted = await decideOrder(
+        const accepted = await decideOrderWithoutEmail(
           producer,
           request.orderId,
           "ACCEPTED",
-          database,
         );
         assert.equal(accepted.ok, true);
         const acceptedInventory = await database.product.findUniqueOrThrow({
