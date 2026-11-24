@@ -6,6 +6,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Prisma, PrismaClient } from "@/generated/prisma/client";
 import type { OrderActor } from "./order-policy";
 import { decideOrder, requestOrder } from "./order-service";
+import { updateManualProductPrice } from "@/features/products/product-price-audit";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 const enabled = Boolean(testDatabaseUrl);
@@ -102,6 +103,7 @@ describe(
         priceCOP: 1000,
         municipality: "Local",
         isPublished: true,
+        priceReferenceEnabled: true,
       };
       const reservedProduct = await database.product.create({
         data: {
@@ -190,7 +192,7 @@ describe(
       assert.ok((await readPriceDate())! > "2000-01-01 00:00:00");
     });
 
-    it("persists a request, its history, and rejected stock release", async () => {
+    it("keeps manual-review products reservable at the seller's published price", async () => {
       const staleUnit = await requestOrderWithoutEmail(buyerOne, {
         productId: reservedProductId,
         quantity: "2.5",
@@ -223,6 +225,7 @@ describe(
         include: { history: true },
       });
       assert.equal(pendingOrder.status, "PENDING");
+      assert.equal(pendingOrder.priceCOP, 1000);
       assert.equal(pendingOrder.history.length, 1);
       assert.ok(pendingOrder.requestedQuantity.equals("2.5"));
 
@@ -265,6 +268,84 @@ describe(
       });
       assert.ok(restored.availableQuantity.equals("5"));
       assert.ok(restored.reservedQuantity.equals("0"));
+    });
+
+    it("audits manual price changes once and enforces owner and expected-price checks", async () => {
+      const product = await database.product.create({
+        data: {
+          ownerId: producer.userId,
+          name: "Precio con historial",
+          category: "OTHER",
+          unit: "KG",
+          priceCOP: 1000,
+          municipality: "Local",
+          availableQuantity: "2",
+        },
+        select: { id: true },
+      });
+      const observedAt = new Date("2026-11-24T12:00:00.000Z");
+      const input = {
+        productId: product.id,
+        unit: "KG",
+        expectedPriceCOP: 1000,
+        newPriceCOP: 1250,
+      };
+
+      const attempts = await Promise.all([
+        updateManualProductPrice(producer, input, database, observedAt),
+        updateManualProductPrice(producer, input, database, observedAt),
+      ]);
+      assert.equal(attempts.every(({ ok }) => ok), true);
+      assert.equal(
+        attempts.filter((result) => result.ok && result.changed).length,
+        1,
+      );
+      assert.deepEqual(
+        await updateManualProductPrice(producer, input, database, observedAt),
+        { ok: true, changed: false },
+      );
+      assert.deepEqual(
+        await updateManualProductPrice(
+          buyerOne,
+          { ...input, newPriceCOP: 1300 },
+          database,
+          observedAt,
+        ),
+        { ok: false, code: "unauthorized" },
+      );
+      assert.deepEqual(
+        await updateManualProductPrice(
+          { userId: buyerOne.userId, roles: ["PRODUCER"] },
+          { ...input, newPriceCOP: 1300 },
+          database,
+          observedAt,
+        ),
+        { ok: false, code: "not-found" },
+      );
+      assert.deepEqual(
+        await updateManualProductPrice(
+          producer,
+          { ...input, expectedPriceCOP: 1000, newPriceCOP: 1300 },
+          database,
+          observedAt,
+        ),
+        { ok: false, code: "conflict" },
+      );
+
+      const changes = await database.productPriceChange.findMany({
+        where: { productId: product.id },
+      });
+      assert.equal(changes.length, 1);
+      assert.equal(changes[0].oldPriceCOP, 1000);
+      assert.equal(changes[0].newPriceCOP, 1250);
+      assert.equal(changes[0].source, "PRODUCER_MANUAL");
+      assert.equal(changes[0].observedAt.toISOString(), observedAt.toISOString());
+      assert.equal(changes[0].appliedAt.toISOString(), observedAt.toISOString());
+      assert.equal(changes[0].actorId, producer.userId);
+      assert.equal(
+        changes[0].reason,
+        "Precio confirmado manualmente por el productor.",
+      );
     });
 
     it("replays concurrent requests by buyer key without reserving twice", async () => {
