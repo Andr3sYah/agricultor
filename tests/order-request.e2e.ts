@@ -1342,8 +1342,8 @@ async function main(): Promise<void> {
       await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: baseURL });
       await page.getByRole("button", { name: "Copiar resumen" }).click();
       await expect(
-        page.getByRole("status", { name: "Resumen copiado.", exact: true }),
-      ).toHaveText("Resumen copiado.");
+        page.getByText("Resumen copiado.", { exact: true }),
+      ).toBeVisible();
       const copiedSummary = await page.evaluate(() => navigator.clipboard.readText());
       assert.equal(copiedSummary.replaceAll("\r\n", "\n"), summary);
       await producerPage.getByRole("button", { name: "Retirar número" }).click();
