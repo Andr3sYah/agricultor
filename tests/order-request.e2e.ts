@@ -1341,7 +1341,9 @@ async function main(): Promise<void> {
       assert.match(summary, /Valor estimado al solicitar: \$\s*2\.500 COP/);
       await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: baseURL });
       await page.getByRole("button", { name: "Copiar resumen" }).click();
-      await expect(page.getByRole("status")).toHaveText("Resumen copiado.");
+      await expect(
+        page.getByRole("status", { name: "Resumen copiado.", exact: true }),
+      ).toHaveText("Resumen copiado.");
       const copiedSummary = await page.evaluate(() => navigator.clipboard.readText());
       assert.equal(copiedSummary.replaceAll("\r\n", "\n"), summary);
       await producerPage.getByRole("button", { name: "Retirar número" }).click();
