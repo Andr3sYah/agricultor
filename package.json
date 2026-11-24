@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/smoke.test.mjs tests/offline-policy.test.mjs tests/demo-seed.test.mjs",
+    "test": "node --test tests/smoke.test.mjs tests/offline-policy.test.mjs tests/demo-seed.test.mjs tests/vercel-cron.test.mjs",
     "test:e2e": "tsx tests/order-request.e2e.ts",
     "test:unit": "tsx --test src/components/site-header.test.tsx src/lib/auth/roles.test.ts src/lib/db.test.ts src/lib/email/brevo.test.ts src/lib/meta-webhook-verification.test.ts src/lib/problem-report.test.ts src/features/auth/order-redirect.test.ts src/features/auth/oauth-browser.test.ts src/features/products/products.test.ts src/features/products/price-reference.test.ts src/features/catalog/public-products.test.ts src/features/dashboard/producer-dashboard.test.ts src/features/orders/orders.test.ts src/features/orders/order-notifications.test.ts src/features/orders/external-payment.test.ts src/features/favorites/favorites.test.ts src/features/calculator/agricultural-costs.test.ts src/features/farm-agenda/farm-agenda.test.ts src/features/unit-converter/agricultural-units.test.ts",
     "test:integration": "tsx --test src/features/orders/orders.integration.test.ts",
