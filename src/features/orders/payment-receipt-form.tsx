@@ -17,7 +17,10 @@ export function PaymentReceiptForm({ orderId, method, wompiUrl, amountCOP }: {
     <details>
       <summary className="min-h-11 cursor-pointer py-2 font-semibold text-emerald-900">Ya recibí el pago</summary>
       <form action={action} className="space-y-2">
-        <p className="text-sm text-slate-700">Confirma solo después de verificar que recibiste el importe completo.</p>
+        <p className="text-sm text-slate-700">Esta confirmación manual no verifica automáticamente el pago con Wompi ni con el banco. Confirma solo después de comprobar el abono completo.</p>
+        <label className="block text-sm font-medium">Referencia de pago (opcional)
+          <input className="mt-1 block min-h-11 w-full rounded-lg border border-slate-300 px-3" autoComplete="off" maxLength={120} name="paymentReference" />
+        </label>
         <button className="min-h-11 rounded-lg bg-emerald-800 px-3 font-semibold text-white disabled:opacity-50" disabled={pending} type="submit">
           Confirmar pago recibido
         </button>

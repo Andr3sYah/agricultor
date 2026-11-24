@@ -103,8 +103,20 @@ Confirmar la recepción y calificar al vendedor requiere la migración
 Las instrucciones de pago externo requieren la migración
 `20261120050000_order_external_payment`. Si cambia el acuerdo de entrega,
 el vendedor debe volver a configurar el pago después de la nueva confirmación.
-Registrar que el vendedor recibió el pago requiere la migración
-`20261120060000_order_payment_receipt`.
+Registrar que el vendedor recibió el pago requiere las migraciones
+`20261120060000_order_payment_receipt` y
+`20261123000000_order_payment_events`. En cada pedido aceptado, el vendedor
+puede elegir transferencia, pago contra entrega o un enlace Wompi; esta
+configuración es por pedido y no guarda credenciales del comercio. La
+confirmación sigue siendo manual: ni Agricultor ni el enlace de Wompi verifican
+automáticamente el abono. Al confirmar, el vendedor puede guardar una referencia
+externa opcional; el comprador y el vendedor ven el estado, el importe y la
+fecha en el historial del pedido. El sistema limita esa consulta a las personas
+asociadas a la orden y registra cada confirmación una sola vez. No se almacenan
+datos de tarjeta ni credenciales de pasarelas. Mercado Pago y otros proveedores
+con cobro integrado no están habilitados: requieren integración del servidor y
+validación de webhooks antes de ofrecer confirmación automática; no se requieren
+variables de entorno nuevas para los métodos actuales.
 
 Los productores administran sus productos y pueden publicarlos explícitamente.
 El catálogo público muestra solo productos publicados con cantidad disponible y

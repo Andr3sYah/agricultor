@@ -1312,10 +1312,13 @@ async function main(): Promise<void> {
       await producerPage.getByRole("button", { name: "Guardar forma de pago" }).click();
       const sellerPayment = producerPage.getByRole("region", { name: "Forma de pago acordada" });
       await sellerPayment.getByText("Ya recibí el pago", { exact: true }).click();
+      await sellerPayment.getByLabel("Referencia de pago (opcional)").fill("BANK-TEST_123");
       await sellerPayment.getByRole("button", { name: "Confirmar pago recibido" }).click();
       await expect(producerPage.getByRole("region", { name: "Pago confirmado", exact: true })).toContainText(/3\.400 COP/);
+      await expect(producerPage.getByRole("region", { name: "Pago confirmado", exact: true })).toContainText("BANK-TEST_123");
       await page.reload();
       await expect(page.getByRole("region", { name: "Pago confirmado", exact: true })).toContainText(/Transferencia directa.*3\.400 COP/);
+      await expect(page.getByRole("region", { name: "Pago confirmado", exact: true })).toContainText("BANK-TEST_123");
       await expect(page.getByRole("button", { name: "Confirmar pago recibido" })).toHaveCount(0);
       await delivery.getByText("Ya recibí el pedido", { exact: true }).click();
       await delivery.getByRole("button", { name: "Confirmar recepción" }).click();

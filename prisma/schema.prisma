@@ -39,6 +39,7 @@ model User {
   orderHistory  OrderHistory[]
   farmActivities FarmActivity[]
   sellerProfile SellerProfile?
+  paymentEvents OrderPaymentEvent[] @relation("PaymentEventActor")
 }
 
 model SellerProfile {
@@ -158,6 +159,7 @@ model Order {
   deliveryDetails    OrderDeliveryDetails?
   receipt            OrderReceipt?
   paymentReceipt     OrderPaymentReceipt?
+  paymentEvents      OrderPaymentEvent[]
 
   @@index([buyerId, createdAt])
   @@index([producerId, status, createdAt])
@@ -171,6 +173,25 @@ model OrderPaymentReceipt {
   method      String   @db.VarChar(16)
   amountCOP   BigInt
   confirmedAt DateTime @default(now())
+}
+
+model OrderPaymentEvent {
+  id                String   @id @default(cuid())
+  orderId           String
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  actorId           String
+  actor             User     @relation("PaymentEventActor", fields: [actorId], references: [id], onDelete: Cascade)
+  provider          String   @db.VarChar(16)
+  method            String   @db.VarChar(16)
+  externalReference String?  @db.VarChar(120)
+  amountCOP         BigInt
+  currency          String   @default("COP") @db.Char(3)
+  status            String   @db.VarChar(16)
+  idempotencyKey    String   @db.VarChar(100)
+  createdAt         DateTime @default(now())
+
+  @@unique([orderId, idempotencyKey])
+  @@index([orderId, createdAt])
 }
 
 model OrderReceipt {
