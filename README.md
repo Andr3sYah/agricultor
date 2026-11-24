@@ -26,9 +26,16 @@ La aplicación local se sirve en `http://localhost:3000`.
 - `API_KEY_BREVO` y `BREVO_SENDER_EMAIL`: clave y dirección remitente
   verificada en Brevo. Se usan para confirmar el correo, recuperar la
   contraseña y recibir por correo los reportes enviados desde «Reportar un
-  problema». Los reportes llegan a `andresdario.2001@gmail.com`. El build puede
-  ejecutarse sin estas credenciales; para recibir reportes en Vercel, configura
-  estas mismas dos variables y usa una dirección remitente verificada en Brevo.
+  problema», avisar al productor de una solicitud nueva y al comprador de su
+  respuesta. Los reportes llegan a `andresdario.2001@gmail.com`. El build puede
+  ejecutarse sin estas credenciales; para enviar correos, configura estas dos
+  variables y usa una dirección remitente verificada en Brevo.
+- `CRON_SECRET`: secreto aleatorio requerido para que el cron de Vercel procese
+  el outbox de notificaciones cada cinco minutos. La app intenta enviar al
+  guardar el pedido; los errores recuperables se reintentan y los resultados
+  ambiguos quedan registrados sin reenvío automático para evitar duplicados.
+  El estado se muestra en el seguimiento del pedido. Nunca registres la clave
+  ni direcciones de correo en logs.
 - El registro manual requiere confirmar el correo. Al abrir el enlace,
   Better Auth inicia la sesión automáticamente.
 - En Vercel, Better Auth usa los dominios de implementación que entrega el
@@ -84,6 +91,12 @@ cuando la base tiene aplicada la migración
 Mientras falte la migración o para precios antiguos sin fecha, se muestra
 «Fecha del precio no disponible». Actualiza las bases con las migraciones
 versionadas, que instalan también el registro automático de esta fecha.
+
+En «Mis productos» el vendedor puede activar o desactivar la revisión manual de
+referencias para cada producto. Aún no hay una integración de datos SIPSA; sus
+boletines son periódicos y dependen de mercado, variedad y presentación. La
+opción no modifica ofertas y el vendedor debe confirmar manualmente cualquier
+cambio de precio. La aplicación no promete cotizaciones en tiempo real.
 
 ## Catálogo, pedidos e inventario
 

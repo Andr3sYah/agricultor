@@ -225,6 +225,43 @@ export async function updateProductPrice(
   return { ok: true, message: "Guardamos el precio." };
 }
 
+export async function setProductPriceReferenceOptIn(
+  _previousState: ProductFormState,
+  formData: FormData,
+): Promise<ProductFormState> {
+  const identity = await getCurrentIdentity();
+  if (!identity || !canManageProducts(identity.roles)) {
+    return { message: "Necesitas el perfil de productor para cambiar esta opción." };
+  }
+
+  const productId = formData.get("productId");
+  const enabled = formData.get("enabled");
+  if (
+    typeof productId !== "string" ||
+    productId.length === 0 ||
+    (enabled !== "true" && enabled !== "false")
+  ) {
+    return { message: "No pudimos actualizar la opción de referencia." };
+  }
+
+  const updated = await prisma.product.updateMany({
+    where: { id: productId, ownerId: identity.userId },
+    data: { priceReferenceEnabled: enabled === "true" },
+  });
+  if (updated.count !== 1) {
+    return { message: "No encontramos ese producto en tu cuenta." };
+  }
+
+  revalidatePath("/mi-cuenta/productos");
+  revalidatePath(`/mi-cuenta/productos/${productId}/editar`);
+  return {
+    ok: true,
+    message: enabled === "true"
+      ? "Activamos tu preferencia para revisar referencias manualmente."
+      : "Desactivamos tu preferencia para revisar referencias.",
+  };
+}
+
 export async function updateProductAvailability(
   productId: string,
   unit: string,

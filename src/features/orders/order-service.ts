@@ -1,6 +1,10 @@
 import { Prisma } from "@/generated/prisma/client";
 import type { PrismaClient } from "@/generated/prisma/client";
-import type { OrderStatus } from "@/generated/prisma/enums";
+import type { OrderNotificationType, OrderStatus } from "@/generated/prisma/enums";
+import {
+  deliverOrderEvent,
+  type OrderNotificationDependencies,
+} from "./order-notifications";
 import {
   canDecideOrder,
   canRequestOrder,
@@ -34,6 +38,7 @@ export async function requestOrder(
   actor: OrderActor | null,
   input: Record<string, unknown>,
   database: PrismaClient,
+  notificationDependencies?: OrderNotificationDependencies,
 ): Promise<OrderMutationResult> {
   if (!actor) {
     return { ok: false, code: "unauthenticated" };
@@ -54,7 +59,8 @@ export async function requestOrder(
   const quantity = new Prisma.Decimal(validation.data.quantity);
   const idempotencyKey = validation.data.idempotencyKey;
 
-  return database.$transaction(async (transaction) => {
+  const result: OrderMutationResult = await database.$transaction(
+    async (transaction): Promise<OrderMutationResult> => {
     await transaction.$queryRaw`
       SELECT pg_advisory_xact_lock(
         hashtextextended(
@@ -71,7 +77,8 @@ export async function requestOrder(
         productId: true,
         requestedQuantity: true,
       },
-    });
+      },
+    );
 
     if (existingOrder) {
       if (
@@ -165,8 +172,21 @@ export async function requestOrder(
       select: { id: true },
     });
 
+    await transaction.orderNotification.create({
+      data: { orderId: order.id, type: "REQUEST_CREATED" },
+    });
+
     return { ok: true, orderId: order.id };
   });
+
+  if (!result.ok) return result;
+  await deliverAfterCommit(
+    result.orderId,
+    "REQUEST_CREATED",
+    database,
+    notificationDependencies,
+  );
+  return result;
 }
 
 export async function decideOrder(
@@ -174,6 +194,7 @@ export async function decideOrder(
   orderIdValue: unknown,
   decisionValue: unknown,
   database: PrismaClient,
+  notificationDependencies?: OrderNotificationDependencies,
 ): Promise<OrderMutationResult> {
   if (!actor) {
     return { ok: false, code: "unauthenticated" };
@@ -189,7 +210,8 @@ export async function decideOrder(
     return { ok: false, code: "invalid" };
   }
 
-  return database.$transaction(async (transaction) => {
+  const result: OrderMutationResult = await database.$transaction(
+    async (transaction): Promise<OrderMutationResult> => {
     const order = await transaction.order.findFirst({
       where: { id: orderId, producerId: actor.userId },
       select: {
@@ -199,7 +221,8 @@ export async function decideOrder(
         requestedQuantity: true,
         status: true,
       },
-    });
+      },
+    );
 
     if (!order || !canDecideOrder(actor, order.producerId)) {
       return { ok: false, code: "not-found" };
@@ -284,6 +307,46 @@ export async function decideOrder(
       },
     });
 
+    await transaction.orderNotification.create({
+      data: {
+        orderId: order.id,
+        type: nextStatus === "ACCEPTED" ? "REQUEST_ACCEPTED" : "REQUEST_REJECTED",
+      },
+    });
+
     return { ok: true, orderId: order.id };
   });
+
+  if (!result.ok) return result;
+  const type: OrderNotificationType =
+    decision === "ACCEPTED" ? "REQUEST_ACCEPTED" : "REQUEST_REJECTED";
+  await deliverAfterCommit(
+    result.orderId,
+    type,
+    database,
+    notificationDependencies,
+  );
+  return result;
+}
+
+async function deliverAfterCommit(
+  orderId: string,
+  type: OrderNotificationType,
+  database: PrismaClient,
+  notificationDependencies?: OrderNotificationDependencies,
+) {
+  try {
+    return await deliverOrderEvent(
+      orderId,
+      type,
+      database,
+      notificationDependencies,
+    );
+  } catch {
+    console.error("No se pudo procesar un aviso de pedido.", {
+      event: type,
+      code: "OUTBOX_DISPATCH_FAILED",
+    });
+    return "PENDING" as const;
+  }
 }
