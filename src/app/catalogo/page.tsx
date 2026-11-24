@@ -50,7 +50,19 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       ? "Escribe una cantidad mayor que cero, con máximo 3 decimales."
       : "Elige una unidad para buscar por cantidad."
     : undefined;
-  const hasFilters = Boolean(filters.name || filters.category || filters.municipality || filters.unit);
+  const minimumPriceInput =
+    typeof params.precioMin === "string" ? params.precioMin.trim().slice(0, 20) : "";
+  const maximumPriceInput =
+    typeof params.precioMax === "string" ? params.precioMax.trim().slice(0, 20) : "";
+  const hasFilters = Boolean(
+    filters.name ||
+    filters.category ||
+    filters.municipality ||
+    filters.unit ||
+    filters.minimumPrice !== undefined ||
+    filters.maximumPrice !== undefined ||
+    filters.priceFilterError,
+  );
   const filterHref = getCatalogPageHref(filters, 1);
   const where = getPublicProductWhere(filters);
   const total = await prisma.product.count({ where });
@@ -121,7 +133,11 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       <form
         action="/catalogo"
         className="mt-6 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-2 sm:items-end sm:p-6 lg:grid-cols-[1fr_1fr_1fr_auto]"
-        key={quantityError ? `${filterHref}:${quantityInput}` : filterHref}
+        key={
+          quantityError || filters.priceFilterError
+            ? `${filterHref}:${quantityInput}:${minimumPriceInput}:${maximumPriceInput}`
+            : filterHref
+        }
         method="get"
       >
         <div className="sm:col-span-2 lg:col-span-4">
@@ -189,6 +205,50 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             type="text"
           />
         </div>
+        <fieldset
+          aria-describedby={filters.priceFilterError ? "precio-error" : undefined}
+          aria-invalid={Boolean(filters.priceFilterError)}
+          className="grid gap-3 rounded-lg border border-slate-200 p-3 sm:col-span-2 sm:grid-cols-2 lg:col-span-4"
+        >
+          <legend className="px-1 text-sm font-semibold">Precio por unidad (COP)</legend>
+          <div>
+            <label className="mb-2 block text-sm font-medium" htmlFor="precio-min">
+              Precio mínimo
+            </label>
+            <input
+              aria-describedby={filters.priceFilterError ? "precio-error" : undefined}
+              aria-invalid={Boolean(filters.priceFilterError)}
+              className="min-h-12 w-full rounded-lg border border-slate-300 px-3"
+              defaultValue={minimumPriceInput}
+              id="precio-min"
+              inputMode="numeric"
+              maxLength={10}
+              name="precioMin"
+              placeholder="Por ejemplo, 2000"
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium" htmlFor="precio-max">
+              Precio máximo
+            </label>
+            <input
+              aria-describedby={filters.priceFilterError ? "precio-error" : undefined}
+              aria-invalid={Boolean(filters.priceFilterError)}
+              className="min-h-12 w-full rounded-lg border border-slate-300 px-3"
+              defaultValue={maximumPriceInput}
+              id="precio-max"
+              inputMode="numeric"
+              maxLength={10}
+              name="precioMax"
+              placeholder="Por ejemplo, 10000"
+            />
+          </div>
+          {filters.priceFilterError && (
+            <p className="text-sm text-rose-800 sm:col-span-2" id="precio-error" role="alert">
+              {filters.priceFilterError} El catálogo no aplicó el rango de precios.
+            </p>
+          )}
+        </fieldset>
         <fieldset className="grid gap-3 rounded-lg border border-slate-200 p-3 sm:col-span-2 sm:grid-cols-2 lg:col-span-4">
           <legend className="px-1 text-sm font-semibold">Buscar por cantidad</legend>
           <div>
@@ -236,7 +296,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           Buscar
         </button>
       </form>
-      {filterHref !== "/catalogo" || quantityError ? (
+      {filterHref !== "/catalogo" || quantityError || filters.priceFilterError ? (
         <Link
           className="mt-2 inline-flex min-h-12 items-center font-semibold text-emerald-900 underline underline-offset-4"
           href="/catalogo"

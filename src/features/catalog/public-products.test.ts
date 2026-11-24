@@ -276,6 +276,64 @@ describe("public catalog query and pagination", () => {
     assert.equal(parseCatalogFilters({ unidad: "KG", cantidad: "1.1234" }).minimumQuantity, undefined);
   });
 
+  it("validates and applies inclusive unit-price bounds", () => {
+    const filters = parseCatalogFilters({
+      precioMin: "2000",
+      precioMax: "10000",
+      categoria: "FRUITS",
+    });
+
+    assert.deepEqual(filters, {
+      category: "FRUITS",
+      municipality: undefined,
+      sort: undefined,
+      minimumPrice: 2000,
+      maximumPrice: 10000,
+      page: 1,
+    });
+    assert.deepEqual(getPublicProductWhere(filters), {
+      isPublished: true,
+      availableQuantity: { gt: 0 },
+      priceCOP: { gte: 2000, lte: 10000 },
+      category: "FRUITS",
+    });
+    assert.equal(
+      getCatalogPageHref(filters, 2),
+      "/catalogo?categoria=FRUITS&precioMin=2000&precioMax=10000&pagina=2",
+    );
+    assert.deepEqual(
+      parseCatalogFilters({
+        precioMin: "2000",
+        precioMax: "10000",
+        categoria: "FRUITS",
+      }),
+      filters,
+    );
+  });
+
+  it("rejects malformed, out-of-range, repeated, and inverted price bounds", () => {
+    for (const searchParams of [
+      { precioMin: "0" },
+      { precioMax: "2147483648" },
+      { precioMin: "2.000" },
+      { precioMin: ["1000", "2000"] },
+      { precioMin: "5000", precioMax: "1000" },
+    ]) {
+      const filters = parseCatalogFilters(searchParams);
+      assert.ok(filters.priceFilterError);
+      assert.equal(filters.minimumPrice, undefined);
+      assert.equal(filters.maximumPrice, undefined);
+      assert.deepEqual(getPublicProductWhere(filters).priceCOP, undefined);
+    }
+
+    assert.deepEqual(parseCatalogFilters({ precioMin: "" }), {
+      category: undefined,
+      municipality: undefined,
+      sort: undefined,
+      page: 1,
+    });
+  });
+
   it("paginates consistently and clamps pages beyond the available results", () => {
     assert.deepEqual(
       getCatalogPagination(PUBLIC_CATALOG_PAGE_SIZE * 2 + 1, 2),

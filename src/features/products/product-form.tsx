@@ -31,6 +31,10 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
 
   return (
     <form action={action} className="mt-6 space-y-5">
+      <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+        Las fotos de producto todavía no están disponibles. No se cargará ninguna
+        imagen hasta contar con almacenamiento seguro.
+      </p>
       {product?.id && <input name="productId" type="hidden" value={product.id} />}
       <div>
         <label className="block text-sm font-medium" htmlFor="name">
@@ -194,8 +198,8 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
         )}
       </div>
       <p className="text-sm text-slate-600">
-        El estado se calcula automáticamente: una cantidad mayor que cero aparece como
-        disponible; cero aparece como agotado.
+        La disponibilidad se calcula con la cantidad: más de cero es «Disponible» y
+        cero es «Agotado». La publicación se controla por separado.
       </p>
       {state.message && (
         <p
