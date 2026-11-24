@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { selectAgriculturalPriceReference } from "./price-reference";
+import {
+  hasManualPriceReferenceConsent,
+  selectAgriculturalPriceReference,
+} from "./price-reference";
 
 const now = new Date("2026-11-24T12:00:00Z");
 const request = {
@@ -22,6 +25,31 @@ describe("agricultural reference price selection", () => {
     assert.deepEqual(
       selectAgriculturalPriceReference(request, [reference], now),
       { status: "available", reference },
+    );
+  });
+
+  it("normalizes accents and case while preserving exact product, unit, and market matching", () => {
+    assert.equal(
+      selectAgriculturalPriceReference(
+        {
+          ...request,
+          productName: "PÁPA CRIOLLA",
+          category: "tubers",
+          unit: "kg",
+          market: "BOGOTA",
+        },
+        [reference],
+        now,
+      ).status,
+      "available",
+    );
+    assert.equal(
+      selectAgriculturalPriceReference(
+        { ...request, market: "Medellín" },
+        [reference],
+        now,
+      ).status,
+      "not-covered",
     );
   });
 
@@ -84,6 +112,12 @@ describe("agricultural reference price selection", () => {
       ),
       { status: "disabled" },
     );
+  });
+
+  it("requires explicit consent to enable manual review but always permits opting out", () => {
+    assert.equal(hasManualPriceReferenceConsent(true, "accepted"), true);
+    assert.equal(hasManualPriceReferenceConsent(true, null), false);
+    assert.equal(hasManualPriceReferenceConsent(false, null), true);
   });
 
   it("rejects duplicate matching observations as ambiguous", () => {

@@ -17,6 +17,13 @@ function normalized(value: string): string {
   return value.trim().normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("es-CO");
 }
 
+export function hasManualPriceReferenceConsent(
+  enabled: boolean,
+  consent: unknown,
+): boolean {
+  return !enabled || consent === "accepted";
+}
+
 export function selectAgriculturalPriceReference(
   requested: {
     productName: string;

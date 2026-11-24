@@ -93,10 +93,21 @@ Mientras falte la migración o para precios antiguos sin fecha, se muestra
 versionadas, que instalan también el registro automático de esta fecha.
 
 En «Mis productos» el vendedor puede activar o desactivar la revisión manual de
-referencias para cada producto. Aún no hay una integración de datos SIPSA; sus
-boletines son periódicos y dependen de mercado, variedad y presentación. La
-opción no modifica ofertas y el vendedor debe confirmar manualmente cualquier
-cambio de precio. La aplicación no promete cotizaciones en tiempo real.
+referencias para cada producto. Activarla requiere consentimiento explícito,
+pero solo habilita revisión manual: no hay feed conectado ni actualizaciones
+automáticas. El boletín diario SIPSA de DANE publica una observación mayorista
+por producto y mercado en COP/kg, omite días sin publicación y no constituye un
+rango de precios de transacción. No se encontró una segunda fuente comparable e
+independiente ni una licencia explícita y verificable para reutilizar un feed
+automatizado; el vendedor debe consultar la fuente oficial y confirmar
+manualmente cualquier cambio. La preferencia no bloquea pedidos de ofertas con
+precio ingresado manualmente. El precio publicado se presenta como referencia
+del productor, no como una cotización oficial ni una garantía.
+La fuente consultable es el [boletín diario de precios mayoristas de SIPSA](https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa/componente-precios-mayoristas).
+
+Los cambios manuales de precio guardan un historial transaccional con valor
+anterior y nuevo, actor productor, observación y aplicación. Requieren la
+migración `20261124120000_product_price_audit_and_reference_consent`.
 
 ## Catálogo, pedidos e inventario
 

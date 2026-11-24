@@ -104,6 +104,10 @@ export default async function RequestOrderPage({
           <div>
             <dt className="font-medium">Precio por unidad</dt>
             <dd>{copFormatter.format(product.priceCOP)}</dd>
+            <p className="mt-1 text-sm text-slate-600">
+              Valor publicado por el productor. El pedido es una solicitud y el
+              productor confirma el precio antes de aceptarlo.
+            </p>
           </div>
           <div>
             <dt className="font-medium">Municipio</dt>

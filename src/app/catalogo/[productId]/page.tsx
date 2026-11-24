@@ -167,6 +167,11 @@ export default async function PublicProductPage({
             <dt className="font-medium">Precio por unidad</dt>
             <dd>{copFormatter.format(product.priceCOP)}</dd>
             <ProductPriceDate date={priceDates.get(product.id)} />
+            <p className="mt-1 text-sm text-slate-600">
+              Precio publicado por el productor; las solicitudes requieren su
+              confirmación. No es una cotización oficial ni una garantía de
+              precio.
+            </p>
           </div>
           <div>
             <dt className="font-medium">Municipio</dt>

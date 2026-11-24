@@ -9,6 +9,8 @@ import {
 import { getCurrentIdentity } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
 import { canEditProduct, canManageProducts } from "./product-access";
+import { updateManualProductPrice } from "./product-price-audit";
+import { hasManualPriceReferenceConsent } from "./price-reference";
 import {
   parseProductPrice,
   parseProductQuantity,
@@ -142,21 +144,50 @@ export async function updateProduct(
     };
   }
 
-  const updated = await prisma.product.updateMany({
-    where: {
-      id: productId,
-      ownerId: identity.userId,
-      OR: [{ unit: result.data.unit }, { reservedQuantity: 0 }],
-      reservedQuantity: {
-        lte: MAX_PRODUCT_INVENTORY.minus(
-          result.data.availableQuantity,
-        ),
+  const updatedCount = await prisma.$transaction(async (transaction) => {
+    const current = await transaction.product.findFirst({
+      where: { id: productId, ownerId: identity.userId },
+      select: { priceCOP: true },
+    });
+    if (!current) return 0;
+
+    const updated = await transaction.product.updateMany({
+      where: {
+        id: productId,
+        ownerId: identity.userId,
+        priceCOP: current.priceCOP,
+        OR: [{ unit: result.data.unit }, { reservedQuantity: 0 }],
+        reservedQuantity: {
+          lte: MAX_PRODUCT_INVENTORY.minus(
+            result.data.availableQuantity,
+          ),
+        },
       },
-    },
-    data: productData(result.data),
+      data: productData(result.data),
+    });
+    if (updated.count !== 1) return 0;
+
+    if (current.priceCOP !== result.data.priceCOP) {
+      const appliedAt = new Date();
+      await transaction.productPriceChange.create({
+        data: {
+          productId,
+          actorId: identity.userId,
+          oldPriceCOP: current.priceCOP,
+          newPriceCOP: result.data.priceCOP,
+          source: "PRODUCER_MANUAL",
+          observedAt: appliedAt,
+          appliedAt,
+          reason: "Precio confirmado manualmente por el productor.",
+        },
+        select: { id: true },
+      });
+    }
+
+    return 1;
   });
 
-  if (updated.count !== 1) {
+  if (updatedCount !== 1) {
     const current = await prisma.product.findFirst({
       where: { id: productId, ownerId: identity.userId },
       select: { unit: true, reservedQuantity: true },
@@ -205,17 +236,26 @@ export async function updateProductPrice(
     };
   }
 
-  const where = { id: productId, ownerId: identity.userId, unit };
-  const updated = await prisma.product.updateMany({
-    where: { ...where, priceCOP: { equals: previousPrice, not: priceCOP } },
-    data: { priceCOP },
-  });
-  if (updated.count === 0 && !await prisma.product.findFirst({
-    where: { ...where, priceCOP },
-    select: { id: true },
-  })) {
+  const result = await updateManualProductPrice(
+    identity,
+    {
+      productId,
+      unit,
+      expectedPriceCOP: previousPrice,
+      newPriceCOP: priceCOP,
+    },
+    prisma,
+  );
+  if (!result.ok && result.code !== "unauthorized") {
     revalidatePath("/mi-cuenta/productos");
-    return { message: "El producto o su precio cambió. Revisa el valor actual antes de guardar." };
+    return {
+      message: result.code === "not-found"
+        ? "No encontramos ese producto en tu cuenta."
+        : "El producto o su precio cambió. Revisa el valor actual antes de guardar.",
+    };
+  }
+  if (!result.ok) {
+    return { message: "Necesitas el perfil de productor para cambiar el precio." };
   }
 
   revalidatePath("/mi-cuenta/productos");
@@ -243,10 +283,23 @@ export async function setProductPriceReferenceOptIn(
   ) {
     return { message: "No pudimos actualizar la opción de referencia." };
   }
+  if (
+    !hasManualPriceReferenceConsent(
+      enabled === "true",
+      formData.get("consent"),
+    )
+  ) {
+    return {
+      message: "Confirma que usarás las referencias solo para revisión manual.",
+    };
+  }
 
   const updated = await prisma.product.updateMany({
     where: { id: productId, ownerId: identity.userId },
-    data: { priceReferenceEnabled: enabled === "true" },
+    data: {
+      priceReferenceEnabled: enabled === "true",
+      priceReferenceConsentAt: enabled === "true" ? new Date() : null,
+    },
   });
   if (updated.count !== 1) {
     return { message: "No encontramos ese producto en tu cuenta." };
