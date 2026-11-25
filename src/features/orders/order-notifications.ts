@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type {
   OrderNotificationStatus,
   OrderNotificationType,
@@ -29,22 +30,17 @@ function logFailure(notificationId: string, code: string, status: string) {
   });
 }
 
-function failureFor(error: unknown): {
-  status: "RETRY" | "FAILED" | "UNKNOWN";
-  code: string;
-} {
+function failureFor(error: unknown): { code: string } {
   if (error instanceof BrevoConfigurationError) {
-    return { status: "RETRY", code: error.code };
+    return { code: error.code };
   }
   if (error instanceof BrevoRejectedEmailError) {
-    return error.status === 429
-      ? { status: "RETRY", code: `BREVO_HTTP_${error.status}` }
-      : { status: "FAILED", code: `BREVO_HTTP_${error.status}` };
+    return { code: `BREVO_HTTP_${error.status}` };
   }
   if (error instanceof Error && error.message.includes("URL pública")) {
-    return { status: "RETRY", code: "APP_URL_MISSING" };
+    return { code: "APP_URL_MISSING" };
   }
-  return { status: "UNKNOWN", code: "DELIVERY_OUTCOME_UNKNOWN" };
+  return { code: "DELIVERY_OUTCOME_UNKNOWN" };
 }
 
 export async function deliverOrderNotification(
@@ -66,6 +62,7 @@ export async function deliverOrderNotification(
   if (!notification) return null;
 
   const now = new Date();
+  const claimToken = randomUUID();
   const claimed = await database.orderNotification.updateMany({
     where: {
       id: notification.id,
@@ -76,20 +73,38 @@ export async function deliverOrderNotification(
     data: {
       status: "SENDING",
       attempts: { increment: 1 },
+      claimToken,
       updatedAt: now,
     },
   });
-  if (claimed.count !== 1) return notification.status;
+  if (claimed.count !== 1) {
+    const current = await database.orderNotification.findUnique({
+      where: { id: notification.id },
+      select: { status: true },
+    });
+    return current?.status ?? null;
+  }
 
   const recipient =
     notification.type === "REQUEST_CREATED"
       ? notification.order.producer
       : notification.order.buyer;
   if (!recipient.emailVerified) {
-    await database.orderNotification.update({
-      where: { id: notification.id },
-      data: { status: "FAILED", lastErrorCode: "RECIPIENT_UNVERIFIED" },
+    const updated = await database.orderNotification.updateMany({
+      where: { id: notification.id, status: "SENDING", claimToken },
+      data: {
+        status: "FAILED",
+        claimToken: null,
+        lastErrorCode: "RECIPIENT_UNVERIFIED",
+      },
     });
+    if (updated.count !== 1) {
+      const current = await database.orderNotification.findUnique({
+        where: { id: notification.id },
+        select: { status: true },
+      });
+      return current?.status ?? null;
+    }
     (dependencies.logFailure ?? logFailure)(
       notification.id,
       "RECIPIENT_UNVERIFIED",
@@ -116,31 +131,32 @@ export async function deliverOrderNotification(
       event: notification.type,
       orderUrl: `${appBaseUrl}/mi-cuenta/pedidos#${encodeURIComponent(anchor)}`,
     });
-    await database.orderNotification.update({
-      where: { id: notification.id },
+    const updated = await database.orderNotification.updateMany({
+      where: { id: notification.id, status: "SENDING", claimToken },
       data: {
         status: "SENT",
         sentAt: new Date(),
         lastErrorCode: null,
+        claimToken: null,
       },
     });
-    return "SENT";
+    if (updated.count === 1) return "SENT";
   } catch (error) {
     const failure = failureFor(error);
     const configurationFailure =
       failure.code === "CONFIGURATION_MISSING" ||
       failure.code === "APP_URL_MISSING";
     const nextAttempt =
-      failure.status === "RETRY" &&
-      (configurationFailure || notification.attempts + 1 < MAX_ATTEMPTS);
-    const status = nextAttempt ? "RETRY" : failure.status === "RETRY" ? "FAILED" : failure.status;
+      configurationFailure || notification.attempts + 1 < MAX_ATTEMPTS;
+    const status = nextAttempt ? "RETRY" : "FAILED";
     const attemptIndex = Math.min(notification.attempts, RETRY_DELAYS_MS.length - 1);
-    await database.orderNotification.update({
-      where: { id: notification.id },
+    const updated = await database.orderNotification.updateMany({
+      where: { id: notification.id, status: "SENDING", claimToken },
       data: {
         status,
         lastErrorCode: failure.code,
         ...(configurationFailure ? { attempts: { decrement: 1 } } : {}),
+        claimToken: null,
         ...(status === "RETRY"
           ? {
               nextAttemptAt: new Date(
@@ -153,6 +169,13 @@ export async function deliverOrderNotification(
           : {}),
       },
     });
+    if (updated.count !== 1) {
+      const current = await database.orderNotification.findUnique({
+        where: { id: notification.id },
+        select: { status: true },
+      });
+      return current?.status ?? null;
+    }
     (dependencies.logFailure ?? logFailure)(
       notification.id,
       failure.code,
@@ -160,6 +183,11 @@ export async function deliverOrderNotification(
     );
     return status;
   }
+  const current = await database.orderNotification.findUnique({
+    where: { id: notification.id },
+    select: { status: true },
+  });
+  return current?.status ?? null;
 }
 
 export async function deliverOrderEvent(
@@ -179,16 +207,52 @@ export async function deliverOrderEvent(
 export async function retryDueOrderNotifications(
   database: PrismaClient,
   now = new Date(),
+  dependencies: OrderNotificationDependencies = {},
 ): Promise<number> {
   await database.orderNotification.updateMany({
     where: {
       status: "SENDING",
       updatedAt: { lte: new Date(now.getTime() - SENDING_LEASE_MS) },
+      attempts: { lt: MAX_ATTEMPTS },
     },
     data: {
-      status: "UNKNOWN",
+      status: "RETRY",
+      claimToken: null,
+      nextAttemptAt: now,
       lastErrorCode: "DELIVERY_OUTCOME_UNKNOWN",
     },
+  });
+  await database.orderNotification.updateMany({
+    where: {
+      status: "SENDING",
+      updatedAt: { lte: new Date(now.getTime() - SENDING_LEASE_MS) },
+      attempts: { gte: MAX_ATTEMPTS },
+    },
+    data: {
+      status: "FAILED",
+      claimToken: null,
+      lastErrorCode: "DELIVERY_OUTCOME_UNKNOWN",
+    },
+  });
+  await database.orderNotification.updateMany({
+    where: {
+      status: "UNKNOWN",
+      attempts: { lt: MAX_ATTEMPTS },
+      nextAttemptAt: { lte: now },
+    },
+    data: {
+      status: "RETRY",
+      claimToken: null,
+      lastErrorCode: "DELIVERY_OUTCOME_UNKNOWN",
+    },
+  });
+  await database.orderNotification.updateMany({
+    where: {
+      status: "UNKNOWN",
+      attempts: { gte: MAX_ATTEMPTS },
+      nextAttemptAt: { lte: now },
+    },
+    data: { status: "FAILED", claimToken: null },
   });
   const due = await database.orderNotification.findMany({
     where: {
@@ -201,7 +265,7 @@ export async function retryDueOrderNotifications(
     select: { id: true },
   });
   for (const { id } of due) {
-    await deliverOrderNotification(id, database);
+    await deliverOrderNotification(id, database, dependencies);
   }
   return due.length;
 }

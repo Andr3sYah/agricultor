@@ -108,6 +108,20 @@ La fuente consultable es el [boletín diario de precios mayoristas de SIPSA](htt
 No hay descarga automática ni cron de precios: la programación de Vercel Hobby
 admite como máximo una ejecución diaria, con precisión horaria de ±59 minutos;
 no se habilita un servicio de pago para actualizar referencias.
+La exploración encontró un XLSX diario de SIPSA con cotizaciones para 11
+mercados y una observación en COP/kg por mercado y día. La licencia para
+reutilización automatizada y la equivalencia de producto, unidad y mercado aún
+no están verificadas; copias OSS del mismo feed no son fuentes independientes.
+Por eso se conserva la revisión manual auditable hasta validar una fuente
+gratuita y legal y su equivalencia.
+
+Las reservas crean el evento de correo en la misma transacción y prueban su
+despacho por Brevo inmediatamente después del commit, con un límite de cinco
+segundos. El pedido permanece registrado aunque el correo falle o expire: el
+estado de entrega queda en el outbox y el cron diario vuelve a intentar los
+eventos pendientes. La interfaz informa por separado el estado del pedido y el
+del correo; solo marca el correo como enviado tras una respuesta exitosa del
+proveedor.
 
 Los cambios manuales de precio guardan un historial transaccional con valor
 anterior y nuevo, actor productor, observación y aplicación. Requieren la

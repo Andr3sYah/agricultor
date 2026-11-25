@@ -24,6 +24,7 @@ type BrevoEmailDependencies = {
   apiKey?: string;
   senderEmail?: string;
   fetcher?: typeof fetch;
+  timeoutMs?: number;
 };
 
 export class BrevoConfigurationError extends Error {
@@ -234,7 +235,7 @@ export async function sendOrderNotificationEmail(
       "content-type": "application/json",
       accept: "application/json",
     },
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(dependencies.timeoutMs ?? 5_000),
     body: JSON.stringify({
       sender: { email: senderEmail, name: "Agricultor" },
       to: [{ email: notification.email, name: notification.name }],

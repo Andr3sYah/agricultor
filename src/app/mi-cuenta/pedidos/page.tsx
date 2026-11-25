@@ -250,25 +250,28 @@ export default async function OrdersPage({
       >
         {!producerView && registeredOrder === order.id && (
           <p className="mb-3 rounded-xl bg-emerald-50 p-3 text-emerald-950" role="status">
-            Tu solicitud está registrada.
+            El pedido quedó registrado.
             {notificationStatus === "SENT"
-              ? " Enviamos un correo al vendedor."
+              ? " El correo al vendedor fue enviado."
               : notificationStatus === "PENDING" ||
                   notificationStatus === "RETRY" ||
                   notificationStatus === "SENDING"
-                ? " El correo al vendedor está pendiente; puede ver la solicitud en sus avisos de pedidos."
+                ? notificationStatus === "RETRY"
+                  ? " No se pudo confirmar el correo; se reintentará automáticamente. El vendedor puede ver la solicitud en sus avisos de pedidos."
+                  : " El correo al vendedor está pendiente; puede ver la solicitud en sus avisos de pedidos."
                 : notificationStatus
-                ? " No pudimos confirmar el correo; el vendedor también puede ver la solicitud en sus avisos de pedidos."
+                ? " No pudimos confirmar el correo. El pedido sigue registrado y el vendedor puede verlo en sus avisos de pedidos."
                 : ""}
           </p>
         )}
         {!producerView && notificationStatus && registeredOrder !== order.id && (
           <p className="mb-3 rounded-xl bg-slate-50 p-3 text-slate-800" role="status">
             {notificationStatus === "SENT"
-              ? "Enviamos un correo sobre esta actualización."
-              : notificationStatus === "PENDING" ||
-                  notificationStatus === "RETRY" ||
-                  notificationStatus === "SENDING"
+              ? "El correo sobre esta actualización fue enviado."
+              : notificationStatus === "RETRY"
+                ? "No se pudo confirmar el correo; se reintentará automáticamente."
+                : notificationStatus === "PENDING" ||
+                    notificationStatus === "SENDING"
                 ? "El correo sobre esta actualización está pendiente; puedes consultar el estado aquí."
                 : "El correo sobre esta actualización no pudo confirmarse. Puedes consultar el estado aquí."}
           </p>

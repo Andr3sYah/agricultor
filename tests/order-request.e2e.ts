@@ -1065,7 +1065,7 @@ async function main(): Promise<void> {
       assert.ok(firstRequest.postData()?.includes(idempotencyKey));
       await page
         .getByRole("status")
-        .getByText("Tu solicitud está registrada.")
+        .getByText("El pedido quedó registrado.")
         .waitFor();
       const firstResponse = await firstRequest.response();
       assert.ok(firstResponse);
@@ -1374,7 +1374,7 @@ async function main(): Promise<void> {
       await page.getByRole("button", { name: "Solicitar producto" }).click();
       await page
         .getByRole("status")
-        .getByText("Tu solicitud está registrada.")
+        .getByText("El pedido quedó registrado.")
         .waitFor();
 
       await producerPage.reload();
