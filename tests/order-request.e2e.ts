@@ -1620,7 +1620,10 @@ async function main(): Promise<void> {
       await expect(acceptedCard.getByRole("link", { name: "Volver a solicitar con el precio actual" })).toHaveCount(0);
       await acceptedCard.getByRole("link", { name: "Buscar el producto en el catálogo" }).click();
       await expect(page.getByLabel("Nombre del producto")).toHaveValue(product.name);
-      await expect(page.getByText("No encontramos productos con estos filtros.")).toBeVisible();
+      await expect(page.getByRole("link", { name: product.name, exact: true })).toBeVisible();
+      await expect(page.getByText("0 Kilogramo (kg)", { exact: true })).toBeVisible();
+      await page.getByRole("link", { name: `Solicitar este producto: ${product.name}` }).click();
+      await expect(page.getByRole("button", { name: "Sin disponibilidad libre" })).toBeDisabled();
 
       await producerPage.goto(`${baseURL}/mi-cuenta/perfil-vendedor`);
       await producerPage.getByRole("checkbox", { name: "Mostrar mi perfil en el catálogo" }).uncheck();
