@@ -178,17 +178,23 @@ validación de webhooks antes de ofrecer confirmación automática; no se requie
 variables de entorno nuevas para los métodos actuales.
 
 Los productores administran sus productos y pueden publicarlos explícitamente.
-El catálogo público muestra solo productos publicados con cantidad disponible y
-no expone datos personales o de contacto. Categorías, unidades y precio por
-unidad en pesos enteros COP siguen siendo hipótesis provisionales descritas en
-`PLAN.md`.
+El catálogo público conserva visibles las ofertas publicadas con inventario
+disponible o reservado; si todo está reservado, no se aceptan nuevas
+solicitudes. Los campos de contacto del perfil se muestran solo si el productor
+autoriza cada canal. No se publican direcciones exactas ni coordenadas GPS.
+Categorías, unidades y precio por unidad en pesos enteros COP siguen siendo
+hipótesis provisionales descritas en `PLAN.md`.
 
-Un comprador autenticado puede solicitar una cantidad. La solicitud reserva
-inventario en una actualización condicional atómica; el productor propietario
-puede aceptarla o rechazarla. Aceptar consume la reserva y rechazar la devuelve
-a la disponibilidad. El pedido conserva una instantánea del nombre, unidad y
-precio, además del historial básico de estados. No se procesan pagos, facturas,
-transporte, notificaciones ni sincronización offline.
+La solicitud requiere una cuenta de comprador; el flujo de pedido como invitado
+sigue pendiente de acuerdo con `PLAN.md`. Cada solicitud reserva inventario en
+una actualización condicional atómica; el productor propietario puede aceptarla
+o rechazarla. Aceptar consume la reserva y rechazar la devuelve a la
+disponibilidad. El pedido conserva una instantánea del producto, unidad y
+precio, además del historial de estados. Las notificaciones se registran en un
+outbox transaccional y el correo se reintenta después del commit. La entrega y
+el pago se coordinan entre las partes: Agricultor puede guardar instrucciones y
+confirmaciones externas, pero no procesa ni custodia pagos, no factura ni
+organiza transporte.
 
 ## Uso sin conexión (primer corte)
 
