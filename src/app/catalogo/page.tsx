@@ -32,7 +32,7 @@ const resultCountFormatter = new Intl.NumberFormat("es-CO");
 
 export const metadata = {
   title: "Catálogo público | Agricultor",
-  description: "Productos publicados con cantidad disponible.",
+  description: "Ofertas publicadas con inventario disponible o reservado.",
 };
 
 export const dynamic = "force-dynamic";
@@ -142,7 +142,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         </p>
         <h1 className="mt-4 text-3xl font-semibold">Catálogo público</h1>
         <p className="mt-3 max-w-2xl text-slate-700">
-          Consulta productos publicados con cantidad disponible. La información
+          Consulta ofertas publicadas con inventario disponible o reservado. La información
           de contacto y ubicación precisa de quienes producen no se muestra.
         </p>
       </section>
