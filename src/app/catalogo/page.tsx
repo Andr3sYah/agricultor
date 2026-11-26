@@ -371,7 +371,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
               >
                 <h2 className="text-xl font-semibold">
                   <Link
-                    className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-900"
+                    className="inline-block min-h-6 max-w-full break-words align-middle leading-6 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-900"
                     href={getPublicProductHref(product.id, {
                       ...filters,
                       page: pagination.page,
@@ -429,7 +429,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                 ) : (
                   <p className="mt-4 text-sm text-slate-700">
                     <Link
-                      className="font-semibold text-emerald-900 underline"
+                      className="inline-flex min-h-11 items-center font-semibold text-emerald-900 underline"
                       href={identity ? "/mi-cuenta" : "/iniciar-sesion"}
                     >
                       {identity ? "Agrega el perfil de comprador" : "Inicia sesión"}
