@@ -37,7 +37,10 @@ export default async function RequestOrderPage({
     where: {
       id: productId,
       isPublished: true,
-      availableQuantity: { gt: 0 },
+      OR: [
+        { availableQuantity: { gt: 0 } },
+        { reservedQuantity: { gt: 0 } },
+      ],
     },
     select: {
       id: true,
@@ -116,23 +119,31 @@ export default async function RequestOrderPage({
         </dl>
         {isBuyer && !isOwner ? (
           <>
-            {searchedQuantity && (
-              <p className="mt-6 text-sm text-slate-700">
-                {initialQuantity
-                  ? "Cargamos la cantidad que buscaste. Puedes cambiarla antes de solicitar."
-                  : "La cantidad que buscaste supera lo disponible. Escribe cuánto necesitas dentro de lo que queda."}
+            {Number(product.availableQuantity) <= 0 ? (
+              <p className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950" role="status">
+                Todo el stock está reservado en pedidos pendientes. No puedes enviar una nueva solicitud hasta que haya disponibilidad libre.
               </p>
+            ) : (
+              <>
+                {searchedQuantity && (
+                  <p className="mt-6 text-sm text-slate-700">
+                    {initialQuantity
+                      ? "Cargamos la cantidad que buscaste. Puedes cambiarla antes de solicitar."
+                      : "La cantidad que buscaste supera lo disponible. Escribe cuánto necesitas dentro de lo que queda."}
+                  </p>
+                )}
+                <OrderRequestForm
+                  availableQuantity={product.availableQuantity.toString()}
+                  availableQuantityLabel={availableQuantityLabel}
+                  idempotencyKey={randomBytes(32).toString("base64url")}
+                  initialQuantity={initialQuantity}
+                  priceCOP={product.priceCOP}
+                  productId={product.id}
+                  suggestAvailableQuantity={Boolean(searchedQuantity && !initialQuantity)}
+                  unit={product.unit}
+                />
+              </>
             )}
-            <OrderRequestForm
-              availableQuantity={product.availableQuantity.toString()}
-              availableQuantityLabel={availableQuantityLabel}
-              idempotencyKey={randomBytes(32).toString("base64url")}
-              initialQuantity={initialQuantity}
-              priceCOP={product.priceCOP}
-              productId={product.id}
-              suggestAvailableQuantity={Boolean(searchedQuantity && !initialQuantity)}
-              unit={product.unit}
-            />
           </>
         ) : !identity ? (
           <div className="mt-6 space-y-3">

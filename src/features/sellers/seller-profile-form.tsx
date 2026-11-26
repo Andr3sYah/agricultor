@@ -23,6 +23,31 @@ export function SellerProfileForm({ profile }: { profile: SellerProfile | null }
         <input className="size-5" defaultChecked={profile?.published} name="published" type="checkbox" />
         Mostrar mi perfil en el catálogo
       </label>
+      <fieldset className="space-y-3 rounded-lg border border-slate-200 p-3">
+        <legend className="px-1 font-semibold">Datos de contacto públicos</legend>
+        <p className="text-sm text-slate-700">Todos están privados hasta que marques su casilla. Puedes retirarlos cuando quieras.</p>
+        <label className="block font-medium">WhatsApp
+          <input className={fieldClass} defaultValue={profile?.whatsapp?.slice(2)} maxLength={24} name="whatsapp" placeholder="Celular de 10 dígitos" type="tel" />
+        </label>
+        <label className="flex min-h-11 items-center gap-3">
+          <input className="size-5" defaultChecked={profile?.whatsappPublic} name="whatsappPublic" type="checkbox" />
+          Publicar WhatsApp
+        </label>
+        <label className="block font-medium">Teléfono
+          <input className={fieldClass} defaultValue={profile?.phone?.slice(2)} maxLength={24} name="phone" placeholder="Teléfono de 10 dígitos" type="tel" />
+        </label>
+        <label className="flex min-h-11 items-center gap-3">
+          <input className="size-5" defaultChecked={profile?.phonePublic} name="phonePublic" type="checkbox" />
+          Publicar teléfono
+        </label>
+        <label className="block font-medium">Correo de coordinación
+          <input className={fieldClass} defaultValue={profile?.email ?? ""} maxLength={254} name="email" type="email" />
+        </label>
+        <label className="flex min-h-11 items-center gap-3">
+          <input className="size-5" defaultChecked={profile?.emailPublic} name="emailPublic" type="checkbox" />
+          Publicar correo
+        </label>
+      </fieldset>
       <button className="min-h-11 rounded-lg bg-emerald-800 px-4 font-semibold text-white" disabled={pending} type="submit">
         Guardar perfil
       </button>

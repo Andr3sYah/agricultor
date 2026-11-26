@@ -79,6 +79,26 @@ describe("public catalog projection", () => {
     );
   });
 
+  it("keeps a published product visible when only reserved stock remains", () => {
+    const products = [
+      {
+        id: "reserved-product",
+        name: "Yuca reservada",
+        category: "TUBERS",
+        availableQuantity: "0",
+        reservedQuantity: "2.5",
+        unit: "KG",
+        priceCOP: 3200,
+        municipality: "La Vega",
+        isPublished: true,
+      },
+    ];
+
+    assert.deepEqual(getPublicProducts(products).map(({ id }) => id), [
+      "reserved-product",
+    ]);
+  });
+
   it("returns only approved public fields, even if private fields are present", () => {
     const product = {
       id: "public-yuca-id",
@@ -252,14 +272,20 @@ describe("public catalog query and pagination", () => {
       }),
       {
         isPublished: true,
-        availableQuantity: { gt: 0 },
+        OR: [
+          { availableQuantity: { gt: 0 } },
+          { reservedQuantity: { gt: 0 } },
+        ],
         category: "FRUITS",
         municipality: { equals: "La Vega", mode: "insensitive" },
       },
     );
     assert.deepEqual(getPublicProductWhere({}), {
       isPublished: true,
-      availableQuantity: { gt: 0 },
+      OR: [
+        { availableQuantity: { gt: 0 } },
+        { reservedQuantity: { gt: 0 } },
+      ],
     });
   });
 
@@ -293,7 +319,10 @@ describe("public catalog query and pagination", () => {
     });
     assert.deepEqual(getPublicProductWhere(filters), {
       isPublished: true,
-      availableQuantity: { gt: 0 },
+      OR: [
+        { availableQuantity: { gt: 0 } },
+        { reservedQuantity: { gt: 0 } },
+      ],
       priceCOP: { gte: 2000, lte: 10000 },
       category: "FRUITS",
     });

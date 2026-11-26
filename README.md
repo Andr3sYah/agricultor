@@ -82,9 +82,26 @@ El formulario público de reportes aplica una trampa honeypot, valida el origen 
 el tamaño del mensaje, y limita cada dirección IP a tres envíos cada diez
 minutos por instancia de servidor.
 
-El esquema y sus migraciones están versionados, pero no se aplican
-automáticamente. Antes de desplegar una migración, verifica que `DATABASE_URL`
-apunte al entorno previsto y que exista un respaldo adecuado.
+El esquema y sus migraciones están versionados, pero Vercel no las aplica
+automáticamente: el build solo genera Prisma y compila Next.js. En el flujo de
+release, antes de desplegar código que dependa de una migración, ejecuta
+`npx prisma migrate deploy` desde un job de migración aprobado, con
+`DATABASE_URL` proporcionada por el entorno seguro de ese release. No agregues
+la migración al build de Vercel: también se ejecuta en previews y podría apuntar
+a una base compartida. Verifica el entorno objetivo y un respaldo antes de
+ejecutar; nunca uses la URL de producción para desarrollo o pruebas. CI aplica
+las migraciones únicamente a su PostgreSQL local desechable.
+
+El error Prisma `P2021` con `public.OrderNotification` faltante puede indicar
+que no se aplicó `20261124010000_order_notifications_and_price_reference`, que
+crea la tabla del historial de avisos. Revisa el ledger de Prisma y confirma
+que la URL, base y esquema sean los mismos que usa el despliegue. Si la
+migración figura aplicada pero la tabla no existe, hay drift de esquema:
+`prisma migrate deploy` omitirá esa migración. No edites el ledger ni ejecutes
+SQL manual para recrearla; detén el release y prepara una reparación revisada
+o una restauración con respaldo verificado. Solo si la migración está pendiente
+en la base correcta, aplícala mediante el flujo de release aprobado y después
+despliega el código.
 
 El catálogo y la ficha muestran la fecha del precio en hora de Colombia
 cuando la base tiene aplicada la migración

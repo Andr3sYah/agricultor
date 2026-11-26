@@ -9,6 +9,7 @@ export type CatalogProductRecord = {
   name: string;
   category: string;
   availableQuantity: string;
+  reservedQuantity?: string;
   unit: string;
   priceCOP: number;
   municipality: string;
@@ -136,9 +137,14 @@ export function getPublicProductWhere(
 
   return {
     isPublished: true,
-    availableQuantity: filters.unit && filters.minimumQuantity
-      ? { gte: filters.minimumQuantity }
-      : { gt: 0 },
+    ...(filters.unit && filters.minimumQuantity
+      ? { availableQuantity: { gte: filters.minimumQuantity } }
+      : {
+          OR: [
+            { availableQuantity: { gt: 0 } },
+            { reservedQuantity: { gt: 0 } },
+          ],
+        }),
     ...(Object.keys(priceCOP).length > 0 ? { priceCOP } : {}),
     ...(filters.unit ? { unit: filters.unit } : {}),
     ...(filters.name
@@ -284,8 +290,9 @@ export function getPublicProducts(
 ): PublicProduct[] {
   return products
     .filter(
-      ({ availableQuantity, isPublished }) =>
-        isPublished && Number(availableQuantity) > 0,
+      ({ availableQuantity, reservedQuantity = "0", isPublished }) =>
+        isPublished &&
+        (Number(availableQuantity) > 0 || Number(reservedQuantity) > 0),
     )
     .map(
       ({

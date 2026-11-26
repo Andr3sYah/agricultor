@@ -46,7 +46,10 @@ const getPublicProduct = cache(async (productId: string) => {
     where: {
       id: productId,
       isPublished: true,
-      availableQuantity: { gt: 0 },
+      OR: [
+        { availableQuantity: { gt: 0 } },
+        { reservedQuantity: { gt: 0 } },
+      ],
     },
     select: {
       id: true,
@@ -54,6 +57,7 @@ const getPublicProduct = cache(async (productId: string) => {
       name: true,
       category: true,
       availableQuantity: true,
+      reservedQuantity: true,
       unit: true,
       priceCOP: true,
       municipality: true,
@@ -68,6 +72,7 @@ const getPublicProduct = cache(async (productId: string) => {
       {
         ...product,
         availableQuantity: product.availableQuantity.toString(),
+        reservedQuantity: product.reservedQuantity.toString(),
         isPublished: true,
       },
     ])[0];

@@ -88,6 +88,7 @@ export default async function AccountPage({
                 {sellerProfileAvailable && (
                   <Link className={secondary} href="/mi-cuenta/perfil-vendedor">Editar perfil de vendedor</Link>
                 )}
+                <Link className={secondary} href="/mi-cuenta/analitica">Analítica manual</Link>
               </div>
             </>
           ) : <SellForm />}

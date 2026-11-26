@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentIdentity } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
-import { getSellerProfileHref, isSellerProfileAvailable } from "./seller-profile";
+import {
+  getSellerProfileHref,
+  isSellerProfileAvailable,
+  normalizeSellerEmail,
+  normalizeSellerPhone,
+} from "./seller-profile";
 
 type ProfileState = { message: string; ok?: boolean };
 
@@ -24,7 +29,30 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
   ) {
     return { message: "Revisa el nombre, el municipio y la descripción." };
   }
-  const data = { ...values, published: form.get("published") === "on" };
+  const rawWhatsapp = form.get("whatsapp");
+  const rawPhone = form.get("phone");
+  const rawEmail = form.get("email");
+  const whatsapp = normalizeSellerPhone(rawWhatsapp);
+  const phone = normalizeSellerPhone(rawPhone);
+  const email = normalizeSellerEmail(rawEmail);
+  if ((typeof rawWhatsapp === "string" && rawWhatsapp.trim() && !whatsapp) ||
+      (typeof rawPhone === "string" && rawPhone.trim() && !phone) ||
+      (typeof rawEmail === "string" && rawEmail.trim() && !email)) {
+    return { message: "Revisa el WhatsApp, el teléfono y el correo." };
+  }
+  const whatsappPublic = Boolean(whatsapp && form.get("whatsappPublic") === "on");
+  const phonePublic = Boolean(phone && form.get("phonePublic") === "on");
+  const emailPublic = Boolean(email && form.get("emailPublic") === "on");
+  const data = {
+    ...values,
+    published: form.get("published") === "on",
+    whatsapp,
+    whatsappPublic,
+    phone,
+    phonePublic,
+    email,
+    emailPublic,
+  };
   const profile = await prisma.sellerProfile.upsert({
     where: { ownerId: identity.userId },
     create: { ownerId: identity.userId, ...data },

@@ -54,6 +54,20 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     typeof params.precioMin === "string" ? params.precioMin.trim().slice(0, 20) : "";
   const maximumPriceInput =
     typeof params.precioMax === "string" ? params.precioMax.trim().slice(0, 20) : "";
+  const municipalityRows = await prisma.product.findMany({
+    where: {
+      isPublished: true,
+      OR: [
+        { availableQuantity: { gt: 0 } },
+        { reservedQuantity: { gt: 0 } },
+      ],
+      municipality: { not: "" },
+    },
+    distinct: ["municipality"],
+    select: { municipality: true },
+    orderBy: { municipality: "asc" },
+  });
+  const municipalities = municipalityRows.map(({ municipality }) => municipality);
   const hasFilters = Boolean(
     filters.name ||
     filters.category ||
@@ -76,6 +90,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       name: true,
       category: true,
       availableQuantity: true,
+      reservedQuantity: true,
       unit: true,
       priceCOP: true,
       municipality: true,
@@ -87,6 +102,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     records.map((product) => ({
       ...product,
       availableQuantity: product.availableQuantity.toString(),
+      reservedQuantity: product.reservedQuantity.toString(),
     })),
   );
   const priceDates = await getProductPriceDates(products);
@@ -200,10 +216,16 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             defaultValue={filters.municipality ?? ""}
             aria-describedby="municipio-ayuda"
             id="municipio"
+            list="municipios-disponibles"
             maxLength={100}
             name="municipio"
             type="text"
           />
+          <datalist id="municipios-disponibles">
+            {municipalities.map((municipality) => (
+              <option key={municipality} value={municipality} />
+            ))}
+          </datalist>
         </div>
         <fieldset
           aria-describedby={filters.priceFilterError ? "precio-error" : undefined}
