@@ -1623,7 +1623,11 @@ async function main(): Promise<void> {
       await expect(page.getByRole("link", { name: product.name, exact: true })).toBeVisible();
       await expect(page.getByText("0 Kilogramo (kg)", { exact: true })).toBeVisible();
       await page.getByRole("link", { name: `Solicitar este producto: ${product.name}` }).click();
-      await expect(page.getByRole("button", { name: "Sin disponibilidad libre" })).toBeDisabled();
+      await expect(
+        page.getByText(
+          "Todo el stock está reservado en pedidos pendientes. No puedes enviar una nueva solicitud hasta que haya disponibilidad libre.",
+        ),
+      ).toBeVisible();
 
       await producerPage.goto(`${baseURL}/mi-cuenta/perfil-vendedor`);
       await producerPage.getByRole("checkbox", { name: "Mostrar mi perfil en el catálogo" }).uncheck();
