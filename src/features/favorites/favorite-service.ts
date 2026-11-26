@@ -59,7 +59,10 @@ export async function addFavorite(
     where: {
       id: productId,
       isPublished: true,
-      availableQuantity: { gt: 0 },
+      OR: [
+        { availableQuantity: { gt: 0 } },
+        { reservedQuantity: { gt: 0 } },
+      ],
     },
     select: { id: true },
   });
@@ -115,7 +118,13 @@ export async function listFavorites(
   const favorites = await database.favorite.findMany({
     where: {
       userId: actor.userId,
-      product: { isPublished: true, availableQuantity: { gt: 0 } },
+      product: {
+        isPublished: true,
+        OR: [
+          { availableQuantity: { gt: 0 } },
+          { reservedQuantity: { gt: 0 } },
+        ],
+      },
     },
     select: {
       product: {

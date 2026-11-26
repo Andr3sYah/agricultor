@@ -10,3 +10,17 @@ export async function isSellerProfileAvailable() {
 export function getSellerProfileHref(id: string) {
   return `/vendedores/${encodeURIComponent(id)}`;
 }
+
+export function normalizeSellerPhone(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().replace(/[ ()-]/g, "");
+  if (!normalized) return null;
+  const number = normalized.replace(/^\+?57(?=3\d{9}$)/, "");
+  return /^3\d{9}$/.test(number) ? `57${number}` : null;
+}
+
+export function normalizeSellerEmail(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const email = value.trim().slice(0, 254);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
+}

@@ -24,11 +24,12 @@ function createDatabase() {
             where: {
               id: string;
               isPublished: boolean;
-              availableQuantity: { gt: number };
+              OR?: Array<{ availableQuantity?: { gt: number }; reservedQuantity?: { gt: number } }>;
             };
           }
         ).where;
-        return where.isPublished && where.availableQuantity.gt === 0 &&
+        return where.isPublished &&
+          Boolean(where.OR?.some((condition) => condition.availableQuantity?.gt === 0)) &&
           products.has(where.id)
           ? { id: where.id }
           : null;
@@ -140,7 +141,13 @@ describe("favorite authorization and isolation", () => {
       (queries.at(-1) as { where: unknown }).where,
       {
         userId: "buyer-one",
-        product: { isPublished: true, availableQuantity: { gt: 0 } },
+        product: {
+          isPublished: true,
+          OR: [
+            { availableQuantity: { gt: 0 } },
+            { reservedQuantity: { gt: 0 } },
+          ],
+        },
       },
     );
   });

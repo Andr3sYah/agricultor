@@ -66,6 +66,12 @@ model SellerProfile {
   description String  @db.VarChar(600)
   municipality String @db.VarChar(100)
   published   Boolean @default(false)
+  whatsapp    String? @db.VarChar(12)
+  whatsappPublic Boolean @default(false)
+  phone       String? @db.VarChar(12)
+  phonePublic Boolean @default(false)
+  email       String? @db.VarChar(254)
+  emailPublic Boolean @default(false)
 }
 
 model Session {

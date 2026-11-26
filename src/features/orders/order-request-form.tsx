@@ -110,10 +110,14 @@ export function OrderRequestForm({
       )}
       <button
         className="min-h-12 w-full rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 disabled:opacity-60"
-        disabled={pending}
+        disabled={pending || Number(availableQuantity) <= 0}
         type="submit"
       >
-        {pending ? "Enviando…" : "Solicitar producto"}
+        {pending
+          ? "Enviando…"
+          : Number(availableQuantity) <= 0
+            ? "Sin disponibilidad libre"
+            : "Solicitar producto"}
       </button>
     </form>
   );
