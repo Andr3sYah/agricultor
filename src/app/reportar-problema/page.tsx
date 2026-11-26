@@ -12,7 +12,7 @@ export default function ReportProblemPage() {
     <main className="min-h-screen flex-1 bg-background px-5 py-8 text-foreground sm:px-9 sm:py-12">
       <div className="mx-auto max-w-2xl">
         <Link
-          className="font-semibold text-primary underline decoration-primary underline-offset-4 hover:text-primary-hover"
+          className="inline-flex min-h-11 items-center font-semibold text-primary underline decoration-primary underline-offset-4 hover:text-primary-hover"
           href="/"
         >
           Volver al inicio

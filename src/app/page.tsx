@@ -54,9 +54,9 @@ export default async function Home() {
             <figcaption className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm text-slate-700">
               <span>Mercado El Potrerillo · Pasto, Nariño</span>
               <span>
-                Foto <a className="underline underline-offset-2" href="https://commons.wikimedia.org/wiki/File:El_Potrerillo,_frutas_y_verduras.jpg">Υ.Γ.</a>
+                Foto <a className="inline-flex min-h-6 min-w-6 items-center justify-center underline underline-offset-2" href="https://commons.wikimedia.org/wiki/File:El_Potrerillo,_frutas_y_verduras.jpg">Υ.Γ.</a>
                 {" · "}
-                <a className="underline underline-offset-2" href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>
+                <a className="inline-flex min-h-6 min-w-6 items-center justify-center underline underline-offset-2" href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>
                 {" · recorte"}
               </span>
             </figcaption>
