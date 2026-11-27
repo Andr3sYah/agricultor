@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPublicProductHref } from "@/features/catalog/public-products";
-import { isSellerProfileAvailable } from "@/features/sellers/seller-profile";
+import {
+  isSellerProfileAvailable,
+} from "@/features/sellers/seller-profile";
+import { PUBLIC_SELLER_CONTACT_CONDITION } from "@/features/sellers/seller-contact";
+import { SellerPublicContact } from "@/features/sellers/seller-public-contact";
 import { isOrderReceiptAvailable } from "@/features/orders/order-receipt";
 import { prisma } from "@/lib/db";
 
@@ -9,11 +13,17 @@ export default async function PublicSellerProfile({ params }: { params: Promise<
   const { sellerId } = await params;
   if (!await isSellerProfileAvailable()) notFound();
   const profile = await prisma.sellerProfile.findFirst({
-    where: { id: sellerId, published: true, owner: { userRoles: { some: { role: "PRODUCER" } } } },
+    where: {
+      id: sellerId,
+      published: true,
+      ...PUBLIC_SELLER_CONTACT_CONDITION,
+      owner: { userRoles: { some: { role: "PRODUCER" } } },
+    },
     select: {
       name: true,
       description: true,
       municipality: true,
+      neighborhood: true,
       ownerId: true,
       whatsapp: true,
       whatsappPublic: true,
@@ -21,6 +31,7 @@ export default async function PublicSellerProfile({ params }: { params: Promise<
       phonePublic: true,
       email: true,
       emailPublic: true,
+      publicContactConsentAt: true,
     },
   });
   if (!profile) notFound();
@@ -33,6 +44,13 @@ export default async function PublicSellerProfile({ params }: { params: Promise<
     where: {
       ownerId: profile.ownerId,
       isPublished: true,
+      owner: {
+        is: {
+          sellerProfile: {
+            is: PUBLIC_SELLER_CONTACT_CONDITION,
+          },
+        },
+      },
       OR: [
         { availableQuantity: { gt: 0 } },
         { reservedQuantity: { gt: 0 } },
@@ -49,25 +67,11 @@ export default async function PublicSellerProfile({ params }: { params: Promise<
         <h1 className="text-3xl font-semibold wrap-anywhere">{profile.name}</h1>
         <p className="font-medium wrap-anywhere">{profile.municipality}</p>
         <p className="whitespace-pre-wrap wrap-anywhere">{profile.description}</p>
-        {(profile.whatsappPublic || profile.phonePublic || profile.emailPublic) && (
-          <div className="rounded-xl border border-slate-200 p-3">
-            <p className="font-semibold">Datos compartidos por el vendedor</p>
-            {profile.whatsappPublic && profile.whatsapp && (
-              <a className="mt-2 inline-flex min-h-11 items-center font-semibold text-emerald-900 underline" href={`https://wa.me/${profile.whatsapp}`}>
-                WhatsApp
-              </a>
-            )}
-            {profile.phonePublic && profile.phone && (
-              <a className="mt-2 block min-h-11 font-semibold text-emerald-900 underline" href={`tel:+${profile.phone}`}>
-                Teléfono
-              </a>
-            )}
-            {profile.emailPublic && profile.email && (
-              <a className="mt-2 block min-h-11 font-semibold text-emerald-900 underline wrap-anywhere" href={`mailto:${profile.email}`}>
-                Correo
-              </a>
-            )}
-          </div>
+        <SellerPublicContact profile={profile} />
+        {profile.whatsappPublic && profile.whatsapp && (
+          <a className="inline-flex min-h-11 items-center font-semibold text-emerald-900 underline" href={`https://wa.me/${profile.whatsapp}`}>
+            WhatsApp
+          </a>
         )}
         {ratings && (
           <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-950">

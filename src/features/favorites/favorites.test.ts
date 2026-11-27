@@ -7,6 +7,7 @@ import {
   type FavoriteActor,
   type FavoritesDatabase,
 } from "./favorite-service";
+import { getPublicSellerOfferCondition } from "@/features/sellers/seller-contact";
 
 const buyerOne: FavoriteActor = { userId: "buyer-one", roles: ["BUYER"] };
 const buyerTwo: FavoriteActor = { userId: "buyer-two", roles: ["BUYER"] };
@@ -24,6 +25,7 @@ function createDatabase() {
             where: {
               id: string;
               isPublished: boolean;
+              owner: unknown;
               OR?: Array<{ availableQuantity?: { gt: number }; reservedQuantity?: { gt: number } }>;
             };
           }
@@ -143,6 +145,7 @@ describe("favorite authorization and isolation", () => {
         userId: "buyer-one",
         product: {
           isPublished: true,
+          ...getPublicSellerOfferCondition(),
           OR: [
             { availableQuantity: { gt: 0 } },
             { reservedQuantity: { gt: 0 } },

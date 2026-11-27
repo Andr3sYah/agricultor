@@ -7,7 +7,7 @@ import {
   getSellerProfileHref,
   getSellerContactVisibility,
   isSellerProfileAvailable,
-  normalizeSellerEmail,
+  normalizeRequiredSellerContact,
   normalizeSellerPhone,
 } from "./seller-profile";
 
@@ -31,33 +31,54 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
     return { message: "Revisa el nombre, el municipio y la descripción." };
   }
   const rawWhatsapp = form.get("whatsapp");
-  const rawPhone = form.get("phone");
-  const rawEmail = form.get("email");
   const whatsapp = normalizeSellerPhone(rawWhatsapp);
-  const phone = normalizeSellerPhone(rawPhone);
-  const email = normalizeSellerEmail(rawEmail);
+  const contact = normalizeRequiredSellerContact({
+    phone: form.get("phone"),
+    email: form.get("email"),
+    neighborhood: form.get("neighborhood"),
+  });
   if ((typeof rawWhatsapp === "string" && rawWhatsapp.trim() && !whatsapp) ||
-      (typeof rawPhone === "string" && rawPhone.trim() && !phone) ||
-      (typeof rawEmail === "string" && rawEmail.trim() && !email)) {
-    return { message: "Revisa el WhatsApp, el teléfono y el correo." };
+      !contact) {
+    return { message: "Completa un celular, un correo válidos y un barrio o vereda aproximados, sin dirección exacta." };
   }
+  const { phone, email, neighborhood } = contact;
+  const publishContacts = form.get("publishContacts") === "on";
+  const published = form.get("published") === "on" && publishContacts;
   const visibility = getSellerContactVisibility(form, { whatsapp, phone, email });
   const data = {
     ...values,
-    published: form.get("published") === "on",
+    published,
+    neighborhood,
     whatsapp,
     ...visibility,
     phone,
     email,
+    publicContactConsentAt: publishContacts ? new Date() : null,
   };
-  const profile = await prisma.sellerProfile.upsert({
-    where: { ownerId: identity.userId },
-    create: { ownerId: identity.userId, ...data },
-    update: data,
-    select: { id: true },
+  const profile = await prisma.$transaction(async (transaction) => {
+    const savedProfile = await transaction.sellerProfile.upsert({
+      where: { ownerId: identity.userId },
+      create: { ownerId: identity.userId, ...data },
+      update: data,
+      select: { id: true },
+    });
+    if (!publishContacts) {
+      await transaction.product.updateMany({
+        where: { ownerId: identity.userId, isPublished: true },
+        data: { isPublished: false },
+      });
+    }
+    return savedProfile;
   });
   revalidatePath("/mi-cuenta/perfil-vendedor");
   revalidatePath(getSellerProfileHref(profile.id));
+  revalidatePath("/catalogo");
   revalidatePath("/catalogo/[productId]", "page");
-  return { ok: true, message: data.published ? "Tu perfil está publicado." : "Guardamos tu perfil como privado." };
+  revalidatePath("/catalogo/[productId]/pedido", "page");
+  return {
+    ok: true,
+    message: publishContacts
+      ? data.published ? "Tu perfil está publicado." : "Guardamos tu perfil como privado."
+      : "Retiramos la publicación de tu perfil y tus ofertas. Para volver a ofrecer productos, completa y acepta los datos públicos.",
+  };
 }

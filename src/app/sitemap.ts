@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/db";
 import { getPublicProductHref } from "@/features/catalog/public-products";
+import { getPublicSellerOfferCondition } from "@/features/sellers/seller-contact";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await prisma.product.findMany({
     where: {
       isPublished: true,
+      ...getPublicSellerOfferCondition(),
       OR: [
         { availableQuantity: { gt: 0 } },
         { reservedQuantity: { gt: 0 } },

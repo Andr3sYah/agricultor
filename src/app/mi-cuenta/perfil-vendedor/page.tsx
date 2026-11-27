@@ -20,7 +20,7 @@ export default async function SellerProfileSettings() {
         Volver a mi cuenta
       </Link>
       <h1 className="text-3xl font-semibold">Perfil de vendedor</h1>
-      <p>Si decides publicarlo, los compradores podrán verlo desde tus ofertas. Usa datos de tu negocio y evita escribir teléfonos, cédulas o direcciones exactas.</p>
+      <p>Las ofertas públicas muestran tu celular, correo y ubicación aproximada (barrio o vereda y municipio) cuando aceptas compartirlos. No escribas direcciones exactas, calles, números ni cédulas.</p>
       {available ? <SellerProfileForm profile={profile} /> : <p>Esta opción todavía no está disponible.</p>}
       {profile?.published && <Link className="inline-flex min-h-11 items-center font-semibold text-emerald-900 underline" href={getSellerProfileHref(profile.id)}>Ver mi perfil público</Link>}
     </main>

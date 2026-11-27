@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { UserRole } from "@/lib/auth/roles";
+import { getPublicSellerOfferCondition } from "@/features/sellers/seller-contact";
 
 export type FavoriteActor = {
   userId: string;
@@ -59,6 +60,7 @@ export async function addFavorite(
     where: {
       id: productId,
       isPublished: true,
+      ...getPublicSellerOfferCondition(),
       OR: [
         { availableQuantity: { gt: 0 } },
         { reservedQuantity: { gt: 0 } },
@@ -120,6 +122,7 @@ export async function listFavorites(
       userId: actor.userId,
       product: {
         isPublished: true,
+        ...getPublicSellerOfferCondition(),
         OR: [
           { availableQuantity: { gt: 0 } },
           { reservedQuantity: { gt: 0 } },

@@ -13,6 +13,8 @@ import {
 } from "@/features/products/product-validation";
 import { getCurrentIdentity } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
+import { getPublicSellerOfferCondition } from "@/features/sellers/seller-contact";
+import { SellerPublicContact } from "@/features/sellers/seller-public-contact";
 
 const copFormatter = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -37,6 +39,7 @@ export default async function RequestOrderPage({
     where: {
       id: productId,
       isPublished: true,
+      ...getPublicSellerOfferCondition(),
       OR: [
         { availableQuantity: { gt: 0 } },
         { reservedQuantity: { gt: 0 } },
@@ -51,6 +54,21 @@ export default async function RequestOrderPage({
       unit: true,
       priceCOP: true,
       municipality: true,
+      owner: {
+        select: {
+          sellerProfile: {
+            select: {
+              municipality: true,
+              neighborhood: true,
+              phone: true,
+              phonePublic: true,
+              email: true,
+              emailPublic: true,
+              publicContactConsentAt: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -71,6 +89,7 @@ export default async function RequestOrderPage({
     product.availableQuantity.toNumber(),
   )} ${unit}`;
   const hasAvailableStock = product.availableQuantity.gt(0);
+  const sellerProfile = product.owner.sellerProfile;
   const filters = parseCatalogFilters(await searchParams);
   const searchedQuantity = filters.unit === product.unit ? filters.minimumQuantity : undefined;
   const initialQuantity =
@@ -118,6 +137,7 @@ export default async function RequestOrderPage({
             <dd className="wrap-anywhere">{product.municipality}</dd>
           </div>
         </dl>
+        {sellerProfile && <SellerPublicContact profile={sellerProfile} />}
         {!hasAvailableStock ? (
           <p
             className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950"
