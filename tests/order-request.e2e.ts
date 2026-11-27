@@ -1623,6 +1623,11 @@ async function main(): Promise<void> {
       await expect(acceptedCard.getByRole("link", { name: "Volver a solicitar con el precio actual" })).toHaveCount(0);
       await acceptedCard.getByRole("link", { name: "Buscar el producto en el catálogo" }).click();
       await expect(page.getByLabel("Nombre del producto")).toHaveValue(product.name);
+      const catalogCard = page.getByRole("listitem").filter({ hasText: product.name });
+      await expect(catalogCard).toBeVisible();
+      await expect(
+        catalogCard.getByRole("link", { name: `Solicitar este producto: ${product.name}` }),
+      ).toHaveCount(0);
       await page.getByRole("link", { name: product.name, exact: true }).click();
       await expect(page.getByRole("heading", { name: product.name })).toBeVisible();
       await expect(page.getByText("0 Kilogramo (kg)", { exact: true })).toBeVisible();
