@@ -141,34 +141,44 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const savedProductIds = new Set(favoriteIds.map(({ productId }) => productId));
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <main className="mx-auto min-h-screen w-full max-w-6xl px-4 pb-12 sm:px-6 sm:pb-16">
       <SiteHeader authenticated={Boolean(identity)} />
-      <Link
-        className="mt-3 inline-flex min-h-12 items-center font-semibold text-emerald-900 underline"
-        href="/"
-      >
-        Volver al inicio
-      </Link>
-      {identity?.roles.includes("BUYER") && (
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-3">
         <Link
-          className="ml-4 inline-flex min-h-12 items-center font-semibold text-emerald-900 underline"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-foreground/75 transition-colors hover:bg-surface-accent hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          href="/"
+        >
+          <span aria-hidden="true">←</span> Inicio
+        </Link>
+        {identity?.roles.includes("BUYER") && (
+        <Link
+          className="inline-flex min-h-11 items-center rounded-lg border border-primary/25 bg-surface px-3 text-sm font-semibold text-primary transition-colors hover:bg-surface-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           href="/mi-cuenta/favoritos"
         >
-          Ver mis favoritos
+          Ver mis favoritos →
         </Link>
-      )}
-      <section className="mt-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-800">
-          Agricultor
+        )}
+      </div>
+      <section className="mt-4 overflow-hidden rounded-3xl border border-[#d8dfce] bg-surface-accent px-5 py-7 sm:px-8 sm:py-9">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary sm:text-sm">
+          Productos del campo colombiano
         </p>
-        <h1 className="mt-4 text-3xl font-semibold">Catálogo público</h1>
-        <p className="mt-3 max-w-2xl text-slate-700">
-          Consulta ofertas publicadas con inventario disponible o reservado. Cada oferta muestra el celular, correo y ubicación aproximada (barrio o vereda y municipio) que el vendedor aceptó compartir. No publicamos direcciones exactas.
-        </p>
+        <div className="mt-2 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div>
+            <h1 className="font-serif text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Catálogo del campo</h1>
+            <p className="mt-3 max-w-2xl leading-relaxed text-foreground/80">
+              Explora ofertas, compara precios y encuentra productos por municipio, categoría o cantidad.
+            </p>
+          </div>
+          <p className="max-w-sm rounded-2xl border border-primary/15 bg-surface/80 p-3.5 text-sm leading-relaxed text-foreground/80">
+            <span className="font-bold text-foreground">Tu privacidad importa.</span>{" "}
+            El contacto solo aparece si el vendedor aceptó compartirlo. La ubicación es aproximada; nunca mostramos direcciones exactas.
+          </p>
+        </div>
       </section>
       <form
         action="/catalogo"
-        className="mt-6 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-2 sm:items-end sm:p-6 lg:grid-cols-[1fr_1fr_1fr_auto]"
+        className="mt-5 grid gap-4 rounded-3xl border border-border bg-surface p-4 shadow-sm sm:grid-cols-2 sm:items-end sm:p-6 lg:grid-cols-[1fr_1fr_1fr_auto]"
         key={
           quantityError || filters.priceFilterError
             ? `${filterHref}:${quantityInput}:${minimumPriceInput}:${maximumPriceInput}`
@@ -177,11 +187,11 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         method="get"
       >
         <div className="sm:col-span-2 lg:col-span-4">
-          <label className="mb-2 block text-sm font-medium" htmlFor="producto">
+          <label className="mb-2 block text-sm font-bold" htmlFor="producto">
             Nombre del producto
           </label>
           <input
-            className="min-h-12 w-full rounded-lg border border-slate-300 px-3"
+            className="min-h-12 w-full rounded-xl border border-control-border/60 bg-white px-3.5 text-foreground placeholder:text-foreground/45"
             defaultValue={filters.name ?? ""}
             id="producto"
             maxLength={100}
@@ -191,11 +201,11 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           />
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium" htmlFor="categoria">
+          <label className="mb-2 block text-sm font-bold" htmlFor="categoria">
             Categoría
           </label>
           <select
-            className="min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3"
+            className="min-h-12 w-full rounded-xl border border-control-border/60 bg-white px-3.5"
             defaultValue={filters.category ?? ""}
             id="categoria"
             name="categoria"
@@ -209,11 +219,11 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           </select>
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium" htmlFor="orden">
+          <label className="mb-2 block text-sm font-bold" htmlFor="orden">
             Ordenar por
           </label>
           <select
-            className="min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3"
+            className="min-h-12 w-full rounded-xl border border-control-border/60 bg-white px-3.5"
             defaultValue={filters.sort ?? ""}
             id="orden"
             name="orden"
@@ -224,15 +234,15 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           </select>
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium" htmlFor="municipio">
+          <label className="mb-2 block text-sm font-bold" htmlFor="municipio">
             Municipio
           </label>
-          <p className="mb-2 text-sm text-slate-700" id="municipio-ayuda">
+          <p className="mb-2 text-sm text-foreground/70" id="municipio-ayuda">
             Escribe el nombre del municipio tal como aparece en la oferta.
           </p>
           <input
             autoComplete="address-level2"
-            className="min-h-12 w-full rounded-lg border border-slate-300 px-3"
+            className="min-h-12 w-full rounded-xl border border-control-border/60 bg-white px-3.5"
             defaultValue={filters.municipality ?? ""}
             aria-describedby="municipio-ayuda"
             id="municipio"
@@ -250,17 +260,17 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         <fieldset
           aria-describedby={filters.priceFilterError ? "precio-error" : undefined}
           aria-invalid={Boolean(filters.priceFilterError)}
-          className="grid gap-3 rounded-lg border border-slate-200 p-3 sm:col-span-2 sm:grid-cols-2 lg:col-span-4"
+          className="grid gap-3 rounded-2xl border border-border bg-background/70 p-4 sm:col-span-2 sm:grid-cols-2 lg:col-span-4"
         >
-          <legend className="px-1 text-sm font-semibold">Precio por unidad (COP)</legend>
+          <legend className="px-1 text-sm font-bold">Precio por unidad (COP)</legend>
           <div>
-            <label className="mb-2 block text-sm font-medium" htmlFor="precio-min">
+            <label className="mb-2 block text-sm font-semibold" htmlFor="precio-min">
               Precio mínimo
             </label>
             <input
               aria-describedby={filters.priceFilterError ? "precio-error" : undefined}
               aria-invalid={Boolean(filters.priceFilterError)}
-              className="min-h-12 w-full rounded-lg border border-slate-300 px-3"
+              className="min-h-12 w-full rounded-xl border border-control-border/60 bg-white px-3.5"
               defaultValue={minimumPriceInput}
               id="precio-min"
               inputMode="numeric"
@@ -270,13 +280,13 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium" htmlFor="precio-max">
+            <label className="mb-2 block text-sm font-semibold" htmlFor="precio-max">
               Precio máximo
             </label>
             <input
               aria-describedby={filters.priceFilterError ? "precio-error" : undefined}
               aria-invalid={Boolean(filters.priceFilterError)}
-              className="min-h-12 w-full rounded-lg border border-slate-300 px-3"
+              className="min-h-12 w-full rounded-xl border border-control-border/60 bg-white px-3.5"
               defaultValue={maximumPriceInput}
               id="precio-max"
               inputMode="numeric"
@@ -291,16 +301,16 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             </p>
           )}
         </fieldset>
-        <fieldset className="grid gap-3 rounded-lg border border-slate-200 p-3 sm:col-span-2 sm:grid-cols-2 lg:col-span-4">
-          <legend className="px-1 text-sm font-semibold">Buscar por cantidad</legend>
+        <fieldset className="grid gap-3 rounded-2xl border border-border bg-background/70 p-4 sm:col-span-2 sm:grid-cols-2 lg:col-span-4">
+          <legend className="px-1 text-sm font-bold">Buscar por cantidad</legend>
           <div>
-            <label className="mb-2 block text-sm font-medium" htmlFor="cantidad">
+            <label className="mb-2 block text-sm font-semibold" htmlFor="cantidad">
               Cantidad que necesitas
             </label>
             <input
               aria-describedby={quantityError ? "cantidad-error" : undefined}
               aria-invalid={Boolean(quantityError && filters.unit)}
-              className="min-h-12 w-full rounded-lg border border-slate-300 px-3"
+              className="min-h-12 w-full rounded-xl border border-control-border/60 bg-white px-3.5"
               defaultValue={filters.minimumQuantity?.replace(".", ",") ?? quantityInput}
               id="cantidad"
               inputMode="decimal"
@@ -310,13 +320,13 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium" htmlFor="unidad">
+            <label className="mb-2 block text-sm font-semibold" htmlFor="unidad">
               Unidad de venta
             </label>
             <select
               aria-describedby={quantityError && !filters.unit ? "cantidad-error" : undefined}
               aria-invalid={Boolean(quantityError && !filters.unit)}
-              className="min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3"
+              className="min-h-12 w-full rounded-xl border border-control-border/60 bg-white px-3.5"
               defaultValue={filters.unit ?? ""}
               id="unidad"
               name="unidad"
@@ -332,7 +342,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           )}
         </fieldset>
         <button
-          className="min-h-12 w-full rounded-lg bg-emerald-800 px-5 py-2 font-semibold text-white hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-900 sm:w-auto"
+          className="min-h-12 w-full rounded-xl bg-primary px-6 py-2 font-bold text-white shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
           type="submit"
         >
           Buscar
@@ -340,21 +350,21 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       </form>
       {filterHref !== "/catalogo" || quantityError || filters.priceFilterError ? (
         <Link
-          className="mt-2 inline-flex min-h-12 items-center font-semibold text-emerald-900 underline underline-offset-4"
+          className="mt-2 inline-flex min-h-11 items-center rounded-lg px-2 font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
           href="/catalogo"
         >
           Restablecer filtros y orden
         </Link>
       ) : null}
       {total > 0 && products.length > 0 ? (
-        <p className="mt-6 text-sm text-slate-700" role="status">
+        <p className="mt-6 text-sm font-semibold text-foreground/75" role="status">
           {total === 1
             ? "1 oferta encontrada"
             : `${resultCountFormatter.format(total)} ofertas encontradas`}
         </p>
       ) : null}
       {products.length === 0 ? (
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 text-slate-700 sm:p-6">
+        <div className="mt-8 rounded-3xl border border-border bg-surface p-6 text-foreground/80 shadow-sm sm:p-8">
           <p>
             {hasFilters
               ? "No encontramos productos con estos filtros."
@@ -366,7 +376,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                 Puedes quitar la cantidad mínima para ver si hay ofertas con menos existencias.
               </p>
               <Link
-                className="mt-3 inline-flex min-h-11 items-center font-semibold text-emerald-900 underline underline-offset-4"
+                className="mt-3 inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4"
                 href={getCatalogPageHref({ ...filters, minimumQuantity: undefined }, 1)}
               >
                 Quitar solo la cantidad mínima
@@ -375,7 +385,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           )}
         </div>
       ) : (
-        <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul aria-label="Ofertas disponibles" className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => {
             const category =
               PRODUCT_CATEGORIES.find(({ value }) => value === product.category)
@@ -387,12 +397,26 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
 
             return (
               <li
-                className="rounded-2xl border border-emerald-950/10 bg-white p-5 shadow-sm sm:p-6"
+                className="flex flex-col rounded-3xl border border-border bg-surface p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6"
                 key={product.id}
               >
-                <h2 className="text-xl font-semibold">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="inline-flex max-w-full rounded-full bg-surface-accent px-3 py-1 text-xs font-bold text-primary">
+                    {category}
+                  </span>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${
+                      Number(product.availableQuantity) > 0
+                        ? "bg-[#e8f0e5] text-[#285632]"
+                        : "bg-[#f4eadb] text-[#764b1e]"
+                    }`}
+                  >
+                    {Number(product.availableQuantity) > 0 ? "Disponible" : "En reserva"}
+                  </span>
+                </div>
+                <h2 className="mt-3 text-xl font-bold leading-snug tracking-tight sm:text-2xl">
                   <Link
-                    className="inline-block min-h-6 max-w-full break-words align-middle leading-6 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-900"
+                    className="inline-block min-h-6 max-w-full break-words align-middle underline-offset-4 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     href={getPublicProductHref(product.id, {
                       ...filters,
                       page: pagination.page,
@@ -401,24 +425,31 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                     {product.name}
                   </Link>
                 </h2>
-                <dl className="mt-4 space-y-3 text-sm text-slate-700">
-                  <div>
-                    <dt className="font-medium">Categoría</dt>
-                    <dd>{category}</dd>
+                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm text-foreground/75">
+                  <div className="col-span-2 rounded-2xl bg-background px-4 py-3">
+                    <dt className="text-xs font-bold uppercase tracking-wide text-foreground/65">
+                      Precio por {unit}
+                    </dt>
+                    <dd className="mt-1 text-2xl font-bold tracking-tight text-primary sm:text-[1.7rem]">
+                      {copFormatter.format(product.priceCOP)}
+                    </dd>
+                    <ProductPriceDate date={priceDates.get(product.id)} />
                   </div>
-                  <div>
-                    <dt className="font-medium">Cantidad disponible</dt>
-                    <dd>
-                      {quantityFormatter.format(
-                        Number(product.availableQuantity),
-                      )}{" "}
-                      {unit}
+                  <div className="rounded-2xl border border-border/80 p-3">
+                    <dt className="text-xs font-bold uppercase tracking-wide text-foreground/65">
+                      Disponible
+                    </dt>
+                    <dd className="mt-1 font-bold text-foreground">
+                      {quantityFormatter.format(Number(product.availableQuantity))} {unit}
                     </dd>
                   </div>
-                  <div>
-                    <dt className="font-medium">Precio por unidad</dt>
-                    <dd>{copFormatter.format(product.priceCOP)}</dd>
-                    <ProductPriceDate date={priceDates.get(product.id)} />
+                  <div className="rounded-2xl border border-border/80 p-3">
+                    <dt className="text-xs font-bold uppercase tracking-wide text-foreground/65">
+                      Municipio
+                    </dt>
+                    <dd className="mt-1 break-words font-bold text-foreground">
+                      {product.municipality}
+                    </dd>
                   </div>
                   {filters.minimumQuantity && (
                     <ProductQuantityEstimate
@@ -427,10 +458,6 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                       priceCOP={product.priceCOP}
                     />
                   )}
-                  <div>
-                    <dt className="font-medium">Municipio</dt>
-                    <dd>{product.municipality}</dd>
-                  </div>
                 </dl>
                 {sellerProfile && (
                   <SellerPublicContact profile={sellerProfile} />
@@ -438,7 +465,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                 {Number(product.availableQuantity) > 0 && (
                   <Link
                     aria-label={`Solicitar este producto: ${product.name}`}
-                    className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-emerald-800 px-4 py-2 text-center font-semibold text-white underline-offset-4 hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-900 sm:w-auto"
+                    className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 py-2 text-center font-bold text-white shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     href={getPublicProductOrderHref(product.id, {
                       ...filters,
                       page: pagination.page,
@@ -453,9 +480,9 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                     productId={product.id}
                   />
                 ) : (
-                  <p className="mt-4 text-sm text-slate-700">
+                  <p className="mt-4 text-sm text-foreground/75">
                     <Link
-                      className="inline-flex min-h-11 items-center font-semibold text-emerald-900 underline"
+                      className="inline-flex min-h-11 items-center font-semibold text-primary underline"
                       href={identity ? "/mi-cuenta" : "/iniciar-sesion"}
                     >
                       {identity ? "Agrega el perfil de comprador" : "Inicia sesión"}
@@ -471,11 +498,11 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       {total > 0 && pagination.pageCount > 1 ? (
         <nav
           aria-label="Paginación del catálogo"
-          className="mt-8 flex items-center justify-between gap-4"
+          className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-4 py-3"
         >
           {pagination.page > 1 ? (
             <Link
-              className="inline-flex min-h-12 items-center rounded-lg border border-emerald-900 px-4 py-2 font-semibold text-emerald-900"
+              className="inline-flex min-h-12 items-center rounded-xl border border-primary/40 px-4 py-2 font-bold text-primary transition-colors hover:bg-surface-accent"
               href={getCatalogPageHref(filters, pagination.page - 1)}
             >
               Anterior
@@ -483,12 +510,12 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           ) : (
             <span />
           )}
-          <span aria-live="polite" className="text-sm text-slate-700">
+          <span aria-live="polite" className="text-sm font-semibold text-foreground/75">
             Página {pagination.page} de {pagination.pageCount}
           </span>
           {pagination.page < pagination.pageCount ? (
             <Link
-              className="inline-flex min-h-12 items-center rounded-lg border border-emerald-900 px-4 py-2 font-semibold text-emerald-900"
+              className="inline-flex min-h-12 items-center rounded-xl border border-primary/40 px-4 py-2 font-bold text-primary transition-colors hover:bg-surface-accent"
               href={getCatalogPageHref(filters, pagination.page + 1)}
             >
               Siguiente
