@@ -25,12 +25,6 @@ export function SiteHeader({
       </Link>
       <nav aria-label="Navegación principal" className="flex items-center gap-1 sm:gap-3">
         <Link
-          className="hidden min-h-11 items-center rounded-xl px-3 text-sm font-bold text-foreground transition-colors hover:bg-surface-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:inline-flex sm:px-4 sm:text-base"
-          href="/catalogo"
-        >
-          Catálogo
-        </Link>
-        <Link
           className="inline-flex min-h-11 items-center rounded-xl border border-primary/30 px-3 text-sm font-bold text-primary transition-colors hover:bg-surface-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-12 sm:px-5 sm:text-base"
           href={authenticated ? "/mi-cuenta" : "/iniciar-sesion"}
         >
