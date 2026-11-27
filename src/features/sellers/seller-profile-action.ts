@@ -6,7 +6,9 @@ import { prisma } from "@/lib/db";
 import {
   getSellerProfileHref,
   getSellerContactVisibility,
+  getSellerExactLocationVisibility,
   isSellerProfileAvailable,
+  normalizeSellerExactLocation,
   normalizeRequiredSellerContact,
   normalizeSellerPhone,
 } from "./seller-profile";
@@ -42,6 +44,23 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
     return { message: "Completa un celular, un correo válidos y un barrio o vereda aproximados, sin dirección exacta." };
   }
   const { phone, email, neighborhood } = contact;
+  const rawExactLocation = form.get("exactLocation");
+  const exactLocation = normalizeSellerExactLocation(rawExactLocation);
+  const publishExactLocation =
+    form.get("publishExactLocation") === "on";
+  if (
+    (typeof rawExactLocation === "string" &&
+      rawExactLocation.trim().length > 240) ||
+    (publishExactLocation && !exactLocation)
+  ) {
+    return {
+      message: "Escribe una ubicación exacta válida antes de aceptar que sea pública.",
+    };
+  }
+  const exactLocationPublic = getSellerExactLocationVisibility(
+    form,
+    exactLocation,
+  );
   const publishContacts = form.get("publishContacts") === "on";
   const published = form.get("published") === "on" && publishContacts;
   const visibility = getSellerContactVisibility(form, { whatsapp, phone, email });
@@ -49,6 +68,10 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
     ...values,
     published,
     neighborhood,
+    exactLocation,
+    exactLocationPublic,
+    exactLocationConsentAt:
+      exactLocationPublic ? new Date() : null,
     whatsapp,
     ...visibility,
     phone,

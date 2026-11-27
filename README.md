@@ -190,8 +190,12 @@ El catálogo público conserva visibles las ofertas publicadas con inventario
 disponible o reservado que tengan contacto y ubicación aproximada confirmados;
 si todo está reservado, no se aceptan nuevas solicitudes. En cada oferta se
 muestran el celular, correo y barrio/vereda y municipio, solo después de la
-aceptación explícita del productor. No se publican direcciones exactas ni
-coordenadas GPS.
+aceptación explícita del productor. Una ubicación exacta es opcional, queda
+privada por defecto y solo se publica con una aceptación independiente e
+informada; requiere la migración
+`20261127113000_seller_exact_location_opt_in`. Sin esa aceptación se muestra
+solo el barrio/vereda y municipio. La ubicación de entrega de cada pedido es
+independiente y permanece privada para comprador y vendedor autorizados.
 Categorías, unidades y precio por unidad en pesos enteros COP siguen siendo
 hipótesis provisionales descritas en `PLAN.md`.
 
