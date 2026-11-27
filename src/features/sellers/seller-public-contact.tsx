@@ -21,9 +21,7 @@ export function SellerPublicContact({
       </p>
       {negotiating && (
         <p className="mt-2 text-sm text-foreground/75">
-          Contacta al vendedor por uno de los medios disponibles para consultar y
-          acordar el precio. La negociación y compra continúan fuera de Agricultor;
-          aquí no se crea una solicitud ni se procesa un pago.
+          Contacta al vendedor para acordar el precio. La negociación y el pago se hacen fuera de Agricultor.
         </p>
       )}
       {contact.whatsappUrl && (

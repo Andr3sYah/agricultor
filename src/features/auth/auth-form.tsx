@@ -264,8 +264,7 @@ export function AuthForm({
       )}
       {!isSignUp && (
         <p className="text-sm leading-6 text-slate-700">
-          Si creaste tu cuenta con Google y quieres entrar con contraseña, usa
-          “¿Olvidaste tu contraseña?” para crear una de forma segura.
+          Si creaste tu cuenta con Google y quieres usar contraseña, restablécela desde “¿Olvidaste tu contraseña?”.
         </p>
       )}
       {!isSignUp && (

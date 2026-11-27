@@ -142,8 +142,7 @@ export default async function RequestOrderPage({
             </dd>
             {product.pricingType === "FIXED" && (
               <p className="mt-1 text-sm text-slate-600">
-                Valor publicado por el productor. El pedido es una solicitud y el
-                productor confirma el precio antes de aceptarlo.
+                Precio publicado por el productor. El pedido es una solicitud; el productor debe aceptarlo y confirmar el precio.
               </p>
             )}
           </div>
@@ -160,9 +159,7 @@ export default async function RequestOrderPage({
         )}
         {product.pricingType === "NEGOTIABLE" ? (
           <p className="mt-6 rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-950">
-            Esta oferta se acuerda directamente con el vendedor. La negociación y
-            compra continúan fuera de Agricultor; no se crea una solicitud de
-            pedido ni se procesa un pago aquí.
+            Acuerda el precio directamente con el vendedor. Aquí no se crea una solicitud ni se procesa un pago.
           </p>
         ) : product.priceCOP === null || product.priceCOP < 1 ? (
           <p className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950">

@@ -91,7 +91,7 @@ export default async function ProductsPage() {
         <h2 className="text-2xl font-semibold">Tus productos</h2>
         {products.length === 0 ? (
           <p className="mt-4 text-slate-700">
-            Todavía no agregas productos. Usa el formulario de arriba para registrar tu primera oferta.
+            Aún no tienes productos. Usa el formulario de arriba para publicar el primero.
           </p>
         ) : (
           <ul className="mt-5 space-y-4">

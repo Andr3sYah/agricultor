@@ -27,7 +27,7 @@ export default async function Home() {
               El campo, más cerca.
             </h1>
             <p className="mt-5 max-w-lg text-lg leading-relaxed text-foreground/80 sm:text-xl">
-              Compra y vende productos del campo colombiano. Consulta precios y cantidades sin registrarte; compara ofertas y conoce su ubicación antes de decidir.
+              Encuentra productos del campo colombiano, compara precios y consulta cantidades sin registrarte.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <Link

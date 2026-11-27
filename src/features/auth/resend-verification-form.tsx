@@ -19,7 +19,7 @@ export function ResendVerificationForm({ callbackURL, initialEmail = "" }: { cal
       });
       setMessage(result.error
         ? "No pudimos solicitar otro enlace. Espera un minuto e inténtalo de nuevo."
-        : "Si el correo corresponde a una cuenta por confirmar, te llegará un enlace. Revisa también el correo no deseado.");
+        : "Si la cuenta espera confirmación, te llegará un enlace. Revisa correo no deseado.");
     } catch {
       setMessage("No pudimos conectarnos. Revisa tu conexión e inténtalo de nuevo.");
     } finally {

@@ -37,8 +37,7 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
   return (
     <form action={action} className="mt-6 space-y-5">
       <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-        Las fotos de producto todavía no están disponibles. No se cargará ninguna
-        imagen hasta contar con almacenamiento seguro.
+        Las fotos no están disponibles por ahora.
       </p>
       {product?.id && <input name="productId" type="hidden" value={product.id} />}
       <div>
@@ -191,8 +190,7 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
             <span>
               <span className="block font-medium">Precio a convenir</span>
               <span className="text-sm text-slate-600">
-                El comprador coordinará directamente contigo; la negociación y
-                compra continúan fuera de Agricultor.
+                Coordina el precio con el comprador. La negociación y el pago se hacen fuera de Agricultor.
               </span>
             </span>
           </label>
@@ -254,8 +252,7 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
         )}
       </div>
       <p className="text-sm text-slate-600">
-        La disponibilidad se calcula con la cantidad: más de cero es «Disponible» y
-        cero es «Agotado». La publicación se controla por separado.
+        Más de cero disponible; cero agotado. La publicación se controla aparte.
       </p>
       {state.message && (
         <p
