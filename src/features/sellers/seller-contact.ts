@@ -28,6 +28,16 @@ export function normalizeSellerNeighborhood(value: unknown): string | null {
   return neighborhood;
 }
 
+export function normalizeSellerExactLocation(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const location = value.trim();
+  return location.length > 0 &&
+    location.length <= 240 &&
+    !location.includes("\0")
+    ? location
+    : null;
+}
+
 export function normalizeRequiredSellerContact(input: {
   phone: unknown;
   email: unknown;
@@ -49,6 +59,15 @@ export function getSellerContactVisibility(
     phonePublic: Boolean(contacts.phone && publishContacts),
     emailPublic: Boolean(contacts.email && publishContacts),
   };
+}
+
+export function getSellerExactLocationVisibility(
+  form: Pick<FormData, "get">,
+  exactLocation: string | null,
+) {
+  return Boolean(
+    exactLocation && form.get("publishExactLocation") === "on",
+  );
 }
 
 export const PUBLIC_SELLER_CONTACT_CONDITION = {
@@ -75,8 +94,9 @@ export function getPublicSellerOfferCondition() {
 export type SellerPublicContactProfile = {
   municipality: string;
   neighborhood: string | null;
-  whatsapp?: string | null;
-  whatsappPublic?: boolean;
+  exactLocation?: string | null;
+  exactLocationPublic?: boolean;
+  exactLocationConsentAt?: Date | null;
   phone: string | null;
   phonePublic: boolean;
   email: string | null;
@@ -94,12 +114,13 @@ export function getSellerPublicContact(profile: SellerPublicContactProfile) {
   ) {
     return null;
   }
-  const whatsapp = profile.whatsappPublic
-    ? normalizeSellerPhone(profile.whatsapp)
-    : null;
+  const exactLocation =
+    profile.exactLocationPublic && profile.exactLocationConsentAt
+      ? normalizeSellerExactLocation(profile.exactLocation)
+      : null;
   return {
     ...details,
     municipality: profile.municipality,
-    ...(whatsapp ? { whatsapp } : {}),
+    exactLocation,
   };
 }

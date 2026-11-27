@@ -12,12 +12,12 @@ export function SellerPublicContact({
   if (!contact) return null;
 
   return (
-    <section aria-label="Contacto y ubicación aproximada" className="mt-4 rounded-2xl border border-border bg-background/70 p-4">
-      <p className="font-semibold">
-        {negotiating ? "Contacta al vendedor para acordar el precio" : "Contacto del vendedor"}
-      </p>
+    <section aria-label="Contacto y ubicación del vendedor" className="mt-4 rounded-2xl border border-border bg-background/70 p-4">
+      <p className="font-semibold">Contacto del vendedor</p>
       <p className="mt-1 text-sm text-foreground/75">
-        Ubicación aproximada: {contact.neighborhood}, {contact.municipality}
+        {contact.exactLocation
+          ? <>Ubicación exacta: {contact.exactLocation}, {contact.municipality}</>
+          : <>Ubicación aproximada: {contact.neighborhood}, {contact.municipality}</>}
       </p>
       {negotiating && (
         <p className="mt-2 text-sm text-foreground/75">

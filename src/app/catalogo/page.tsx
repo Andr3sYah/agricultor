@@ -105,8 +105,9 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             select: {
               municipality: true,
               neighborhood: true,
-              whatsapp: true,
-              whatsappPublic: true,
+              exactLocation: true,
+              exactLocationPublic: true,
+              exactLocationConsentAt: true,
               phone: true,
               phonePublic: true,
               email: true,
@@ -179,7 +180,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           </div>
           <p className="max-w-sm rounded-2xl border border-primary/15 bg-surface/80 p-3.5 text-sm leading-relaxed text-foreground/80">
             <span className="font-bold text-foreground">Tu privacidad importa.</span>{" "}
-            El contacto solo aparece si el vendedor aceptó compartirlo. La ubicación es aproximada; nunca mostramos direcciones exactas.
+            El contacto y la ubicación exacta solo se muestran si el vendedor acepta publicarlos. Si no acepta publicar la ubicación exacta, mostramos solo el barrio o vereda y el municipio.
           </p>
         </div>
       </section>

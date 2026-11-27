@@ -3,9 +3,11 @@ import { prisma } from "@/lib/db";
 export {
   getPublicSellerOfferCondition,
   getSellerContactVisibility,
+  getSellerExactLocationVisibility,
   getSellerPublicContact,
   normalizeRequiredSellerContact,
   normalizeSellerEmail,
+  normalizeSellerExactLocation,
   normalizeSellerNeighborhood,
   normalizeSellerPhone,
   PUBLIC_SELLER_CONTACT_CONDITION,
