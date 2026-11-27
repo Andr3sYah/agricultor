@@ -322,6 +322,21 @@ async function main(): Promise<void> {
     });
 
     const municipality = `Municipio E2E ${suffix}`;
+    await database.sellerProfile.create({
+      data: {
+        ownerId: producer.id,
+        name: "Productor de prueba E2E",
+        description: "Perfil público para las ofertas del catálogo E2E.",
+        municipality,
+        neighborhood: "El Porvenir",
+        published: true,
+        phone: "573000000000",
+        phonePublic: true,
+        email: producerEmail,
+        emailPublic: true,
+        publicContactConsentAt: new Date(),
+      },
+    });
     const catalogProduct = {
       ownerId: producer.id,
       category: "OTHER",
