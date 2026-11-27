@@ -971,6 +971,9 @@ async function main(): Promise<void> {
       await expect(page.getByLabel("Cantidad que solicitas")).toHaveValue("");
       await expect(page.getByRole("button", { name: "Usar cantidad disponible" })).toHaveCount(0);
       await page.goto(`${baseURL}/catalogo/${product.id}`);
+      await expect(
+        page.getByRole("link", { name: `Solicitar este producto: ${product.name}` }),
+      ).toBeVisible();
       await expect(page.getByText("Fecha del precio no disponible")).toBeVisible();
       await page.getByRole("button", { name: "Guardar en favoritos" }).click();
       await expect(page.getByRole("button", { name: "Quitar de favoritos" })).toBeVisible();
@@ -1620,9 +1623,16 @@ async function main(): Promise<void> {
       await expect(acceptedCard.getByRole("link", { name: "Volver a solicitar con el precio actual" })).toHaveCount(0);
       await acceptedCard.getByRole("link", { name: "Buscar el producto en el catálogo" }).click();
       await expect(page.getByLabel("Nombre del producto")).toHaveValue(product.name);
-      await expect(page.getByRole("link", { name: product.name, exact: true })).toBeVisible();
+      await page.getByRole("link", { name: product.name, exact: true }).click();
+      await expect(page.getByRole("heading", { name: product.name })).toBeVisible();
       await expect(page.getByText("0 Kilogramo (kg)", { exact: true })).toBeVisible();
-      await page.getByRole("link", { name: `Solicitar este producto: ${product.name}` }).click();
+      await expect(
+        page.getByRole("link", { name: `Solicitar este producto: ${product.name}` }),
+      ).toHaveCount(0);
+      await expect(page.getByRole("status").filter({
+        hasText: "Todo el stock está reservado en pedidos pendientes.",
+      })).toBeVisible();
+      await page.goto(`${baseURL}/catalogo/${product.id}/pedido`);
       await expect(
         page.getByText(
           "Todo el stock está reservado en pedidos pendientes. No puedes enviar una nueva solicitud hasta que haya disponibilidad libre.",
