@@ -242,6 +242,7 @@ test("producer registration keeps its intent through sign-in and selling", async
   assert.equal(signinResponse.status, 200);
   const signinHtml = await signinResponse.text();
   assert.match(signinHtml, /href="\/crear-cuenta\?intent=producer"/);
+  assert.match(signinHtml, /href="\/recuperar-contrasena\?intent=producer"/);
   assert.match(authForm, /\/mi-cuenta\?intent=producer/);
   assert.match(authForm, /Iniciar sesión para vender/);
   assert.match(roleForm, /Vender productos/);
@@ -384,32 +385,57 @@ test("production password recovery pages render without sending email", async ()
 
 test("password recovery keeps only the validated order redirect through reset", async () => {
   const redirectTo = "/catalogo/product-1/pedido";
-  const [response, unsafeResponse] = await Promise.all([
+  const context = new URLSearchParams({
+    redirectTo,
+    intent: "producer",
+  });
+  const [response, unsafeResponse, resetResponse] = await Promise.all([
     fetch(
-      `${url}/recuperar-contrasena?redirectTo=${encodeURIComponent(redirectTo)}`,
+      `${url}/recuperar-contrasena?${context}`,
     ),
     fetch(
-      `${url}/recuperar-contrasena?redirectTo=${encodeURIComponent("https://example.com/")}`,
+      `${url}/recuperar-contrasena?redirectTo=${encodeURIComponent("https://example.com/")}&intent=producer`,
     ),
+    fetch(`${url}/restablecer-contrasena?${context}`),
   ]);
   assert.equal(response.status, 200);
   assert.equal(unsafeResponse.status, 200);
-  const [html, unsafeHtml] = await Promise.all([
+  assert.equal(resetResponse.status, 200);
+  const [html, unsafeHtml, resetHtml] = await Promise.all([
     response.text(),
     unsafeResponse.text(),
+    resetResponse.text(),
   ]);
   assert.match(
     html,
-    /href="\/iniciar-sesion\?redirectTo=%2Fcatalogo%2Fproduct-1%2Fpedido"/,
+    /href="\/iniciar-sesion\?redirectTo=%2Fcatalogo%2Fproduct-1%2Fpedido&amp;intent=producer"/,
   );
-  assert.match(unsafeHtml, /href="\/iniciar-sesion"/);
+  assert.match(unsafeHtml, /href="\/iniciar-sesion\?intent=producer"/);
   assert.doesNotMatch(unsafeHtml, /redirectTo=https:\/\/example\.com/);
+  assert.match(
+    resetHtml,
+    /href="\/recuperar-contrasena\?redirectTo=%2Fcatalogo%2Fproduct-1%2Fpedido&amp;intent=producer"/,
+  );
+  assert.match(
+    resetHtml,
+    /href="\/iniciar-sesion\?redirectTo=%2Fcatalogo%2Fproduct-1%2Fpedido&amp;intent=producer"/,
+  );
   assert.match(passwordRecoveryPage, /getOrderRequestRedirect\(params\.redirectTo\)/);
-  assert.match(passwordRecoveryPage, /RequestPasswordResetForm redirectTo=\{redirectTo\}/);
+  assert.match(passwordRecoveryPage, /const producerIntent = params\.intent === "producer"/);
+  assert.match(
+    passwordRecoveryPage,
+    /RequestPasswordResetForm[\s\S]*?producerIntent=\{producerIntent\}/,
+  );
+  assert.match(passwordResetForms, /contextQuery\.set\("intent", "producer"\)/);
   assert.match(passwordResetForms, /redirectTo: resetPasswordURL/);
   assert.match(passwordResetForms, /href=\{signInHref\}/);
+  assert.match(passwordResetForms, /href=\{recoveryHref\}/);
   assert.match(passwordResetPage, /getOrderRequestRedirect\(params\.redirectTo\)/);
-  assert.match(passwordResetPage, /ResetPasswordForm token=\{token \?\? ""\} redirectTo=\{redirectTo\}/);
+  assert.match(passwordResetPage, /const producerIntent = params\.intent === "producer"/);
+  assert.match(
+    passwordResetPage,
+    /ResetPasswordForm[\s\S]*?producerIntent=\{producerIntent\}/,
+  );
 });
 
 test("account forms explain password requirements and link mismatch errors to fields", () => {

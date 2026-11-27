@@ -7,18 +7,20 @@ import { LoadingIndicator } from "@/components/loading-indicator";
 
 export function RequestPasswordResetForm({
   redirectTo,
+  producerIntent,
 }: {
   redirectTo: string | null;
+  producerIntent: boolean;
 }) {
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
-  const redirectQuery = redirectTo
-    ? `?${new URLSearchParams({ redirectTo })}`
-    : "";
-  const resetPasswordURL = `/restablecer-contrasena${redirectQuery}`;
-  const signInHref = redirectTo
-    ? `/iniciar-sesion?${new URLSearchParams({ redirectTo })}`
-    : "/iniciar-sesion";
+  const contextQuery = new URLSearchParams();
+  if (redirectTo) contextQuery.set("redirectTo", redirectTo);
+  if (producerIntent) contextQuery.set("intent", "producer");
+  const contextQueryString = contextQuery.toString();
+  const contextQuerySuffix = contextQueryString ? `?${contextQueryString}` : "";
+  const resetPasswordURL = `/restablecer-contrasena${contextQuerySuffix}`;
+  const signInHref = `/iniciar-sesion${contextQuerySuffix}`;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -97,17 +99,23 @@ export function RequestPasswordResetForm({
 export function ResetPasswordForm({
   token,
   redirectTo,
+  producerIntent,
 }: {
   token: string;
   redirectTo: string | null;
+  producerIntent: boolean;
 }) {
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [pending, setPending] = useState(false);
   const [passwordMismatch, setPasswordMismatch] = useState(false);
-  const signInHref = redirectTo
-    ? `/iniciar-sesion?${new URLSearchParams({ redirectTo })}`
-    : "/iniciar-sesion";
+  const contextQuery = new URLSearchParams();
+  if (redirectTo) contextQuery.set("redirectTo", redirectTo);
+  if (producerIntent) contextQuery.set("intent", "producer");
+  const contextQueryString = contextQuery.toString();
+  const contextQuerySuffix = contextQueryString ? `?${contextQueryString}` : "";
+  const signInHref = `/iniciar-sesion${contextQuerySuffix}`;
+  const recoveryHref = `/recuperar-contrasena${contextQuerySuffix}`;
 
   useEffect(() => {
     if (token) {
@@ -171,7 +179,7 @@ export function ResetPasswordForm({
         </p>
         <Link
           className="flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-center font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          href="/recuperar-contrasena"
+          href={recoveryHref}
         >
           Solicitar otro enlace
         </Link>
@@ -275,7 +283,7 @@ export function ResetPasswordForm({
         <p className="text-center text-sm text-slate-700">
           <Link
             className="inline-flex min-h-12 items-center font-semibold text-primary underline hover:text-primary-hover"
-            href="/recuperar-contrasena"
+            href={recoveryHref}
           >
             Solicitar otro enlace
           </Link>
