@@ -10,6 +10,7 @@ export default async function ResetPasswordPage({
   const params = await searchParams;
   const token = typeof params.token === "string" ? params.token : "";
   const redirectTo = getOrderRequestRedirect(params.redirectTo);
+  const producerIntent = params.intent === "producer";
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-xl items-center px-4 py-8 sm:px-6 sm:py-12">
@@ -27,7 +28,11 @@ export default async function ResetPasswordPage({
         <p className="mt-3 leading-7 text-slate-700">
           Elige una contraseña nueva de al menos 8 caracteres.
         </p>
-        <ResetPasswordForm token={token ?? ""} redirectTo={redirectTo} />
+        <ResetPasswordForm
+          token={token}
+          redirectTo={redirectTo}
+          producerIntent={producerIntent}
+        />
       </section>
     </main>
   );

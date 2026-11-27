@@ -124,6 +124,7 @@ export function AuthForm({
     : authPage;
   const recoveryQuery = new URLSearchParams();
   if (redirectTo) recoveryQuery.set("redirectTo", redirectTo);
+  if (producerIntent) recoveryQuery.set("intent", "producer");
   const recoveryQueryString = recoveryQuery.toString();
   const recoveryHref = recoveryQueryString
     ? `/recuperar-contrasena?${recoveryQueryString}`
