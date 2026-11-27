@@ -31,8 +31,8 @@ export default async function SignUpPage({
         </h1>
         <p className="mt-3 leading-7 text-slate-700">
           {producerIntent
-            ? "Inicia sesión y selecciona Vender productos."
-            : "Compra, vende y consulta tus pedidos."}
+            ? "Después, elige Vender productos."
+            : "Compra, vende o consulta tus pedidos."}
         </p>
         <AuthForm
           mode="sign-up"

@@ -42,7 +42,7 @@ export function RequestPasswordResetForm({
       }
 
       setMessage(
-        "Si existe una cuenta con ese correo, recibirás instrucciones para cambiar la contraseña. Revisa el correo no deseado. Si no llega, verifica tu correo y vuelve a solicitar el enlace.",
+        "Si existe una cuenta con ese correo, recibirás un enlace. Revisa correo no deseado y vuelve a solicitarlo si no llega.",
       );
     } catch {
       setMessage(

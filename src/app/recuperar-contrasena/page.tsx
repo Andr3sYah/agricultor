@@ -25,7 +25,7 @@ export default async function RequestPasswordResetPage({
         </p>
         <h1 className="mt-4 text-3xl font-semibold">Recupera tu contraseña</h1>
         <p className="mt-3 leading-7 text-slate-700">
-          Te enviaremos un enlace si encontramos una cuenta con ese correo.
+          Escribe tu correo para solicitar el enlace de recuperación.
         </p>
         <RequestPasswordResetForm
           redirectTo={redirectTo}

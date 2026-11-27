@@ -178,12 +178,12 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           <div>
             <h1 className="font-serif text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Catálogo del campo</h1>
             <p className="mt-3 max-w-2xl leading-relaxed text-foreground/80">
-              Explora ofertas, consulta precios y encuentra productos por municipio, categoría o cantidad.
+              Busca productos por municipio, categoría o cantidad.
             </p>
           </div>
           <p className="max-w-sm rounded-2xl border border-primary/15 bg-surface/80 p-3.5 text-sm leading-relaxed text-foreground/80">
-            <span className="font-bold text-foreground">Tu privacidad importa.</span>{" "}
-            El contacto y la ubicación exacta solo se muestran si el vendedor acepta publicarlos. Si no acepta publicar la ubicación exacta, mostramos solo el barrio o vereda y el municipio.
+            <span className="font-bold text-foreground">Contacto y ubicación:</span>{" "}
+            solo se muestran con autorización del vendedor. Sin autorización, vemos barrio o vereda y municipio.
           </p>
         </div>
       </section>
@@ -249,7 +249,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             Municipio
           </label>
           <p className="mb-2 text-sm text-foreground/70" id="municipio-ayuda">
-            Escribe el nombre del municipio tal como aparece en la oferta.
+            Usa el nombre del municipio de la oferta.
           </p>
           <input
             autoComplete="address-level2"
@@ -384,7 +384,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           {filters.minimumQuantity && (
             <>
               <p className="mt-2 text-sm">
-                Puedes quitar la cantidad mínima para ver si hay ofertas con menos existencias.
+                Quita la cantidad mínima para ver más ofertas.
               </p>
               <Link
                 className="mt-3 inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4"

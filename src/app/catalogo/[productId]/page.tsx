@@ -223,9 +223,7 @@ export default async function PublicProductPage({
               <>
                 <ProductPriceDate date={priceDates.get(product.id)} />
                 <p className="mt-1 text-sm text-slate-600">
-                  Precio publicado por el productor; las solicitudes requieren su
-                  confirmación. No es una cotización oficial ni una garantía de
-                  precio.
+                  Precio publicado por el productor. La solicitud no confirma la compra ni garantiza el precio.
                 </p>
               </>
             )}
@@ -261,9 +259,7 @@ export default async function PublicProductPage({
         />
         {product.pricingType === "NEGOTIABLE" ? (
           <p className="mt-6 rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-950">
-            Comunícate con el vendedor usando los contactos públicos para consultar
-            el precio. La negociación y compra continúan fuera de Agricultor; aquí
-            no se envían solicitudes ni se procesan pagos.
+            Consulta el precio con el vendedor por los contactos públicos. La negociación y el pago se hacen fuera de Agricultor.
           </p>
         ) : Number(product.availableQuantity) > 0 ? (
           <Link

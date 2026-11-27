@@ -295,7 +295,7 @@ describe("seller profile contact opt-in normalization", () => {
       }),
     );
 
-    assert.match(markup, /Contacta al vendedor .*consultar y acordar el precio/);
+    assert.match(markup, /Contacta al vendedor para acordar el precio/);
     assert.match(markup, /fuera de Agricultor/);
     assert.match(markup, /href="https:\/\/wa\.me\/573001234567"/);
     assert.match(markup, /href="tel:\+573011234567"/);

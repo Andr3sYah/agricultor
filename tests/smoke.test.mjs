@@ -135,7 +135,7 @@ test("production home page offers one shared signup and a single sign-in link", 
   const html = await response.text();
 
   assert.match(html, /<html lang="es"/);
-  assert.match(html, /Compra y vende productos del campo/);
+  assert.match(html, /Encuentra productos del campo colombiano/);
   assert.match(html, /href="\/crear-cuenta">Crear cuenta<\/a>/);
   assert.equal([...html.matchAll(/href="\/crear-cuenta"/g)].length, 1);
   assert.match(html, /href="\/catalogo">Explorar el catálogo<\/a>/);
@@ -145,7 +145,7 @@ test("production home page offers one shared signup and a single sign-in link", 
   assert.ok(primaryNavigation);
   assert.doesNotMatch(primaryNavigation[1], /Catálogo|href="\/catalogo"/);
   assert.equal([...html.matchAll(/href="\/iniciar-sesion"/g)].length, 1);
-  assert.match(html, /Consulta precios y cantidades sin registrarte/);
+  assert.match(html, /compara precios y consulta cantidades sin registrarte/);
   assert.match(html, /href="\/iniciar-sesion">Inicia sesión<\/a>/);
   assert.match(html, /Mercado El Potrerillo/);
   assert.match(html, /mercado-potrerillo\.webp/);
@@ -240,7 +240,7 @@ test("producer registration keeps its intent through sign-in and selling", async
   assert.equal(signupResponse.status, 200);
   const signupHtml = await signupResponse.text();
   assert.match(signupHtml, /Crea tu cuenta para vender/);
-  assert.match(signupHtml, /selecciona Vender productos/);
+  assert.match(signupHtml, /elige Vender productos/);
   assert.match(signupHtml, /href="\/iniciar-sesion\?intent=producer"/);
 
   const signinResponse = await fetch(`${url}/iniciar-sesion?intent=producer`);
@@ -292,7 +292,7 @@ test("Google sign-in is available with safe account linking and clear password r
   assert.match(authForm, /No pudimos iniciar sesión con Google/);
   assert.doesNotMatch(authConfig, /mapProfileToUser|overrideUserInfoOnSignIn:\s*true/);
   assert.match(authForm, /¿Olvidaste tu contraseña\?/);
-  assert.match(authForm, /para crear una de forma segura/);
+  assert.match(authForm, /restablécela desde/);
 });
 
 test("production sign-in page offers clear recovery and return navigation", async () => {

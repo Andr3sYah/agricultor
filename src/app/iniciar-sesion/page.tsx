@@ -41,7 +41,7 @@ export default async function SignInPage({
         <h1 className="mt-4 text-3xl font-semibold">Inicia sesión</h1>
         <EmailConfirmationNotice state={confirmationState} />
         <p className="mt-3 leading-7 text-slate-700">
-          Ingresa con el correo y la contraseña de tu cuenta.
+          Usa el correo y la contraseña de tu cuenta.
         </p>
         <AuthForm
           mode="sign-in"
