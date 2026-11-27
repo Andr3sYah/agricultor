@@ -18,11 +18,11 @@ export function ProductQuantityEstimate({
   if (total === null) return null;
 
   return (
-    <div className="rounded-xl bg-emerald-50 p-3 text-emerald-950">
-      <dt className="font-medium">
+    <div className="col-span-2 rounded-2xl border border-primary/15 bg-surface-accent p-4 text-foreground">
+      <dt className="text-sm font-bold">
         Total estimado por {quantityFormatter.format(Number(quantity))} {unit}
       </dt>
-      <dd className="mt-1 break-words text-base font-semibold">
+      <dd className="mt-1 break-words text-lg font-bold text-primary">
         $ {formatAgriculturalValue(total)} COP
       </dd>
     </div>

@@ -33,7 +33,7 @@ const priceDateFormatter = new Intl.DateTimeFormat("es-CO", {
 
 export function ProductPriceDate({ date }: { date?: Date }) {
   return (
-    <dd className="text-sm text-slate-600">
+    <dd className="mt-1 text-xs text-foreground/60 sm:text-sm">
       {date ? (
         <>Precio actualizado el <time dateTime={date.toISOString()}>{priceDateFormatter.format(date)}</time></>
       ) : "Fecha del precio no disponible"}
