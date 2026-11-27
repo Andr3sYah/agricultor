@@ -243,6 +243,12 @@ pruebas HTTP de producción y necesita que se corra `npm run build` antes. El
 build requiere `AUTH_SECRET` y `DATABASE_URL`, pero no ejecuta consultas ni
 migraciones.
 
+En CI, el workflow crea un servicio PostgreSQL 16 desechable por ejecución,
+aplica allí las migraciones y pasa su URL de prueba explícitamente a integración
+y E2E; no depende de un `TEST_DATABASE_URL` local, `.env` ni secretos de
+producción. El build recibe una URL de marcador y un secreto temporal generado
+para CI, y no conecta con la base.
+
 Para poblar manualmente esa misma base local con productos visibles en el
 catálogo, ejecuta `npm run db:seed:demo` con `TEST_DATABASE_URL` configurada
 para una PostgreSQL en `localhost`, `127.0.0.1` o `::1` cuyo nombre empiece por
