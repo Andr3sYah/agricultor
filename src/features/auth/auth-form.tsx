@@ -122,6 +122,12 @@ export function AuthForm({
   const authPageHref = authQueryString
     ? `${authPage}?${authQueryString}`
     : authPage;
+  const recoveryQuery = new URLSearchParams();
+  if (redirectTo) recoveryQuery.set("redirectTo", redirectTo);
+  const recoveryQueryString = recoveryQuery.toString();
+  const recoveryHref = recoveryQueryString
+    ? `/recuperar-contrasena?${recoveryQueryString}`
+    : "/recuperar-contrasena";
   const signInQuery = new URLSearchParams();
   if (redirectTo) signInQuery.set("redirectTo", redirectTo);
   if (producerIntent) signInQuery.set("intent", "producer");
@@ -265,7 +271,7 @@ export function AuthForm({
         <p className="text-center text-sm">
           <Link
             className="inline-flex min-h-12 items-center font-semibold text-primary underline hover:text-primary-hover"
-            href="/recuperar-contrasena"
+            href={recoveryHref}
           >
             ¿Olvidaste tu contraseña?
           </Link>

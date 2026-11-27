@@ -5,9 +5,20 @@ import { useEffect, useState, type FormEvent } from "react";
 import { authClient } from "@/lib/auth-client";
 import { LoadingIndicator } from "@/components/loading-indicator";
 
-export function RequestPasswordResetForm() {
+export function RequestPasswordResetForm({
+  redirectTo,
+}: {
+  redirectTo: string | null;
+}) {
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
+  const redirectQuery = redirectTo
+    ? `?${new URLSearchParams({ redirectTo })}`
+    : "";
+  const resetPasswordURL = `/restablecer-contrasena${redirectQuery}`;
+  const signInHref = redirectTo
+    ? `/iniciar-sesion?${new URLSearchParams({ redirectTo })}`
+    : "/iniciar-sesion";
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -18,7 +29,7 @@ export function RequestPasswordResetForm() {
     try {
       const result = await authClient.requestPasswordReset({
         email: String(formData.get("email") ?? ""),
-        redirectTo: "/restablecer-contrasena",
+        redirectTo: resetPasswordURL,
       });
 
       if (result.error) {
@@ -74,7 +85,7 @@ export function RequestPasswordResetForm() {
       <p className="text-center text-sm text-slate-700">
         <Link
           className="inline-flex min-h-12 items-center font-semibold text-primary underline hover:text-primary-hover"
-          href="/iniciar-sesion"
+          href={signInHref}
         >
           Volver a iniciar sesión
         </Link>
@@ -83,11 +94,20 @@ export function RequestPasswordResetForm() {
   );
 }
 
-export function ResetPasswordForm({ token }: { token: string }) {
+export function ResetPasswordForm({
+  token,
+  redirectTo,
+}: {
+  token: string;
+  redirectTo: string | null;
+}) {
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [pending, setPending] = useState(false);
   const [passwordMismatch, setPasswordMismatch] = useState(false);
+  const signInHref = redirectTo
+    ? `/iniciar-sesion?${new URLSearchParams({ redirectTo })}`
+    : "/iniciar-sesion";
 
   useEffect(() => {
     if (token) {
@@ -158,7 +178,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         <p className="text-center text-sm text-slate-700">
           <Link
             className="inline-flex min-h-12 items-center font-semibold text-primary underline hover:text-primary-hover"
-            href="/iniciar-sesion"
+            href={signInHref}
           >
             Volver a iniciar sesión
           </Link>

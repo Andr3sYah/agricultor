@@ -45,6 +45,14 @@ const passwordResetForms = await readFile(
   new URL("../src/features/auth/password-reset-forms.tsx", import.meta.url),
   "utf8",
 );
+const passwordRecoveryPage = await readFile(
+  new URL("../src/app/recuperar-contrasena/page.tsx", import.meta.url),
+  "utf8",
+);
+const passwordResetPage = await readFile(
+  new URL("../src/app/restablecer-contrasena/page.tsx", import.meta.url),
+  "utf8",
+);
 const catalogPage = await readFile(
   new URL("../src/app/catalogo/page.tsx", import.meta.url),
   "utf8",
@@ -326,6 +334,10 @@ test("production sign-in preserves a validated order request through account cre
     html,
     /href="\/crear-cuenta\?redirectTo=%2Fcatalogo%2Fproduct-1%2Fpedido"/,
   );
+  assert.match(
+    html,
+    /href="\/recuperar-contrasena\?redirectTo=%2Fcatalogo%2Fproduct-1%2Fpedido"/,
+  );
 
   const unsafeResponse = await fetch(
     `${url}/iniciar-sesion?redirectTo=${encodeURIComponent(
@@ -368,6 +380,36 @@ test("production password recovery pages render without sending email", async ()
   assert.match(missingTokenHtml, /Solicitar otro enlace/);
   assert.match(missingTokenHtml, /href="\/recuperar-contrasena"/);
   assert.match(missingTokenHtml, /href="\/iniciar-sesion"/);
+});
+
+test("password recovery keeps only the validated order redirect through reset", async () => {
+  const redirectTo = "/catalogo/product-1/pedido";
+  const [response, unsafeResponse] = await Promise.all([
+    fetch(
+      `${url}/recuperar-contrasena?redirectTo=${encodeURIComponent(redirectTo)}`,
+    ),
+    fetch(
+      `${url}/recuperar-contrasena?redirectTo=${encodeURIComponent("https://example.com/")}`,
+    ),
+  ]);
+  assert.equal(response.status, 200);
+  assert.equal(unsafeResponse.status, 200);
+  const [html, unsafeHtml] = await Promise.all([
+    response.text(),
+    unsafeResponse.text(),
+  ]);
+  assert.match(
+    html,
+    /href="\/iniciar-sesion\?redirectTo=%2Fcatalogo%2Fproduct-1%2Fpedido"/,
+  );
+  assert.match(unsafeHtml, /href="\/iniciar-sesion"/);
+  assert.doesNotMatch(unsafeHtml, /redirectTo=https:\/\/example\.com/);
+  assert.match(passwordRecoveryPage, /getOrderRequestRedirect\(params\.redirectTo\)/);
+  assert.match(passwordRecoveryPage, /RequestPasswordResetForm redirectTo=\{redirectTo\}/);
+  assert.match(passwordResetForms, /redirectTo: resetPasswordURL/);
+  assert.match(passwordResetForms, /href=\{signInHref\}/);
+  assert.match(passwordResetPage, /getOrderRequestRedirect\(params\.redirectTo\)/);
+  assert.match(passwordResetPage, /ResetPasswordForm token=\{token \?\? ""\} redirectTo=\{redirectTo\}/);
 });
 
 test("account forms explain password requirements and link mismatch errors to fields", () => {
