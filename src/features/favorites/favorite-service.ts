@@ -22,7 +22,8 @@ export type FavoriteProduct = {
   category: string;
   availableQuantity: string;
   unit: string;
-  priceCOP: number;
+  pricingType: "FIXED" | "NEGOTIABLE";
+  priceCOP: number | null;
   municipality: string;
 };
 
@@ -138,6 +139,7 @@ export async function listFavorites(
           availableQuantity: true,
           unit: true,
           priceCOP: true,
+          pricingType: true,
           municipality: true,
         },
       },

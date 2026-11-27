@@ -75,6 +75,8 @@ export function getPublicSellerOfferCondition() {
 export type SellerPublicContactProfile = {
   municipality: string;
   neighborhood: string | null;
+  whatsapp?: string | null;
+  whatsappPublic?: boolean;
   phone: string | null;
   phonePublic: boolean;
   email: string | null;
@@ -92,5 +94,12 @@ export function getSellerPublicContact(profile: SellerPublicContactProfile) {
   ) {
     return null;
   }
-  return { ...details, municipality: profile.municipality };
+  const whatsapp = profile.whatsappPublic
+    ? normalizeSellerPhone(profile.whatsapp)
+    : null;
+  return {
+    ...details,
+    municipality: profile.municipality,
+    ...(whatsapp ? { whatsapp } : {}),
+  };
 }

@@ -95,6 +95,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       availableQuantity: true,
       reservedQuantity: true,
       unit: true,
+      pricingType: true,
       priceCOP: true,
       municipality: true,
       isPublished: true,
@@ -104,6 +105,8 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             select: {
               municipality: true,
               neighborhood: true,
+              whatsapp: true,
+              whatsappPublic: true,
               phone: true,
               phonePublic: true,
               email: true,
@@ -126,7 +129,11 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const sellerProfilesByProductId = new Map(
     records.map(({ id, owner }) => [id, owner.sellerProfile]),
   );
-  const priceDates = await getProductPriceDates(products);
+  const fixedPriceProducts = products.filter(
+    (product): product is typeof product & { pricingType: "FIXED"; priceCOP: number } =>
+      product.pricingType === "FIXED" && product.priceCOP !== null,
+  );
+  const priceDates = await getProductPriceDates(fixedPriceProducts);
   const identity = await getCurrentIdentity();
   const favoriteIds =
     identity?.roles.includes("BUYER") && products.length > 0
@@ -167,7 +174,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           <div>
             <h1 className="font-serif text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Catálogo del campo</h1>
             <p className="mt-3 max-w-2xl leading-relaxed text-foreground/80">
-              Explora ofertas, compara precios y encuentra productos por municipio, categoría o cantidad.
+              Explora ofertas, consulta precios y encuentra productos por municipio, categoría o cantidad.
             </p>
           </div>
           <p className="max-w-sm rounded-2xl border border-primary/15 bg-surface/80 p-3.5 text-sm leading-relaxed text-foreground/80">
@@ -428,12 +435,16 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                 <dl className="mt-4 grid grid-cols-2 gap-3 text-sm text-foreground/75">
                   <div className="col-span-2 rounded-2xl bg-background px-4 py-3">
                     <dt className="text-xs font-bold uppercase tracking-wide text-foreground/65">
-                      Precio por {unit}
+                      {product.pricingType === "FIXED" ? `Precio por ${unit}` : "Precio"}
                     </dt>
                     <dd className="mt-1 text-2xl font-bold tracking-tight text-primary sm:text-[1.7rem]">
-                      {copFormatter.format(product.priceCOP)}
+                      {product.pricingType === "FIXED" && product.priceCOP !== null
+                        ? copFormatter.format(product.priceCOP)
+                        : "Consultar precio"}
                     </dd>
-                    <ProductPriceDate date={priceDates.get(product.id)} />
+                    {product.pricingType === "FIXED" && (
+                      <ProductPriceDate date={priceDates.get(product.id)} />
+                    )}
                   </div>
                   <div className="rounded-2xl border border-border/80 p-3">
                     <dt className="text-xs font-bold uppercase tracking-wide text-foreground/65">
@@ -451,7 +462,9 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                       {product.municipality}
                     </dd>
                   </div>
-                  {filters.minimumQuantity && (
+                  {filters.minimumQuantity &&
+                    product.pricingType === "FIXED" &&
+                    product.priceCOP !== null && (
                     <ProductQuantityEstimate
                       quantity={filters.minimumQuantity}
                       unit={unit}
@@ -462,7 +475,12 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                 {sellerProfile && (
                   <SellerPublicContact profile={sellerProfile} />
                 )}
-                {Number(product.availableQuantity) > 0 && (
+                {product.pricingType === "NEGOTIABLE" ? (
+                  <p className="mt-5 rounded-xl border border-primary/20 bg-surface-accent p-3 text-sm text-foreground/80">
+                    Contacta al vendedor para acordar el precio. La compra se
+                    continúa fuera de Agricultor.
+                  </p>
+                ) : Number(product.availableQuantity) > 0 ? (
                   <Link
                     aria-label={`Solicitar este producto: ${product.name}`}
                     className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 py-2 text-center font-bold text-white shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -473,7 +491,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                   >
                     Solicitar este producto
                   </Link>
-                )}
+                ) : null}
                 {identity?.roles.includes("BUYER") ? (
                   <FavoriteControl
                     isFavorite={savedProductIds.has(product.id)}

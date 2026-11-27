@@ -12,7 +12,8 @@ export type CatalogProductRecord = {
   availableQuantity: string;
   reservedQuantity?: string;
   unit: string;
-  priceCOP: number;
+  pricingType: "FIXED" | "NEGOTIABLE";
+  priceCOP: number | null;
   municipality: string;
   isPublished: boolean;
 };
@@ -171,10 +172,18 @@ export function getPublicProductWhere(
 
 export function getCatalogOrderBy(sort: CatalogSort | undefined) {
   if (sort === "precio-asc") {
-    return [{ priceCOP: "asc" as const }, { id: "asc" as const }];
+    return [
+      { pricingType: "asc" as const },
+      { priceCOP: "asc" as const },
+      { id: "asc" as const },
+    ];
   }
   if (sort === "precio-desc") {
-    return [{ priceCOP: "desc" as const }, { id: "asc" as const }];
+    return [
+      { pricingType: "asc" as const },
+      { priceCOP: "desc" as const },
+      { id: "asc" as const },
+    ];
   }
 
   return [{ updatedAt: "desc" as const }, { id: "asc" as const }];
@@ -260,13 +269,17 @@ export function getPublicProductMetadata(
   const quantity = new Intl.NumberFormat("es-CO", {
     maximumFractionDigits: 3,
   }).format(Number(product.availableQuantity));
-  const price = new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(product.priceCOP);
+  const price = product.pricingType === "FIXED" && product.priceCOP !== null
+    ? new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        maximumFractionDigits: 0,
+      }).format(product.priceCOP)
+    : "Precio a convenir";
   const title = `${product.name} | Agricultor`;
-  const description = `${category} · ${quantity} ${unit} disponibles · ${price} por unidad · ${product.municipality}`;
+  const description = `${category} · ${quantity} ${unit} disponibles · ${
+    product.pricingType === "FIXED" ? `${price} por unidad` : price
+  } · ${product.municipality}`;
   const url = new URL(getPublicProductHref(product.id), baseUrl);
 
   return {
@@ -303,6 +316,7 @@ export function getPublicProducts(
         category,
         availableQuantity,
         unit,
+        pricingType,
         priceCOP,
         municipality,
       }) => ({
@@ -311,6 +325,7 @@ export function getPublicProducts(
         category,
         availableQuantity,
         unit,
+        pricingType,
         priceCOP,
         municipality,
       }),

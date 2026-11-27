@@ -21,6 +21,11 @@ enum OrderStatus {
   REJECTED
 }
 
+enum ProductPricingType {
+  FIXED
+  NEGOTIABLE
+}
+
 enum OrderNotificationType {
   REQUEST_CREATED
   REQUEST_ACCEPTED
@@ -139,7 +144,8 @@ model Product {
   availableQuantity     Decimal  @db.Decimal(12, 3)
   reservedQuantity      Decimal  @default(0) @db.Decimal(12, 3)
   unit                  String   @db.VarChar(30)
-  priceCOP              Int
+  priceCOP              Int?
+  pricingType           ProductPricingType @default(FIXED)
   municipality          String   @db.VarChar(100)
   isPublished           Boolean  @default(false)
   priceReferenceEnabled Boolean  @default(false)

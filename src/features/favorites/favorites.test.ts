@@ -79,6 +79,7 @@ function createDatabase() {
               category: "GRAINS",
               availableQuantity: { toString: () => "2.5" },
               unit: "KG",
+              pricingType: "FIXED",
               priceCOP: 1200,
               municipality: "Pasto",
             },

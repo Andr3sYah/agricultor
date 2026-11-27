@@ -19,6 +19,7 @@ export type ProductField =
   | "category"
   | "availableQuantity"
   | "unit"
+  | "pricingType"
   | "priceCOP"
   | "municipality";
 
@@ -29,7 +30,8 @@ export type ProductInput = {
   category: (typeof PRODUCT_CATEGORIES)[number]["value"];
   availableQuantity: string;
   unit: (typeof PRODUCT_UNITS)[number]["value"];
-  priceCOP: number;
+  pricingType: "FIXED" | "NEGOTIABLE";
+  priceCOP: number | null;
   municipality: string;
 };
 
@@ -46,7 +48,8 @@ export function parseProductPrice(value: unknown): number | null {
   const digits = /^\d{1,3}(?:\.\d{3})+$/.test(rawPrice)
     ? rawPrice.replaceAll(".", "")
     : rawPrice;
-  const price = /^\d{1,10}$/.test(digits) ? Number(digits) : 0;
+  if (!/^\d{1,10}$/.test(digits)) return null;
+  const price = Number(digits);
   return price >= 1 && price <= 2_147_483_647 ? price : null;
 }
 
@@ -69,7 +72,12 @@ export function validateProductInput(
   const category = asString(input.category);
   const quantity = parseProductQuantity(input.availableQuantity);
   const unit = asString(input.unit);
-  const priceCOP = parseProductPrice(input.priceCOP);
+  const pricingType = input.pricingType === "FIXED" || input.pricingType === "NEGOTIABLE"
+    ? input.pricingType
+    : null;
+  const priceCOP = pricingType === "NEGOTIABLE"
+    ? null
+    : parseProductPrice(input.priceCOP);
   const municipality = asString(input.municipality);
   const categoryOption = PRODUCT_CATEGORIES.find(
     (option) => option.value === category,
@@ -92,7 +100,9 @@ export function validateProductInput(
     errors.unit = "Elige una unidad de la lista.";
   }
 
-  if (priceCOP === null) {
+  if (!pricingType) {
+    errors.pricingType = "Elige cómo definirás el precio.";
+  } else if (pricingType === "FIXED" && priceCOP === null) {
     errors.priceCOP = PRODUCT_PRICE_ERROR;
   }
 
@@ -100,7 +110,13 @@ export function validateProductInput(
     errors.municipality = "Escribe un municipio o localidad entre 2 y 100 caracteres.";
   }
 
-  if (Object.keys(errors).length > 0 || !categoryOption || !unitOption || priceCOP === null || quantity === null) {
+  if (
+    Object.keys(errors).length > 0 ||
+    !categoryOption ||
+    !unitOption ||
+    !pricingType ||
+    quantity === null
+  ) {
     return { ok: false, errors };
   }
 
@@ -111,6 +127,7 @@ export function validateProductInput(
       category: categoryOption.value,
       availableQuantity: quantity,
       unit: unitOption.value,
+      pricingType,
       priceCOP,
       municipality,
     },

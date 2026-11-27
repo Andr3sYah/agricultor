@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createProduct, updateProduct, type ProductFormState } from "./product-actions";
 import { PRODUCT_CATEGORIES, PRODUCT_UNITS } from "./product-validation";
 
@@ -10,6 +10,7 @@ export type ProductFormValues = {
   category: string;
   availableQuantity: string;
   unit: string;
+  pricingType: "FIXED" | "NEGOTIABLE";
   priceCOP: string;
   municipality: string;
 };
@@ -26,8 +27,12 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
     product ? updateProduct : createProduct,
     initialState,
   );
+  const [selectedPricingType, setSelectedPricingType] = useState(
+    product?.pricingType ?? "FIXED",
+  );
   const editing = Boolean(product);
   const values = state.values ?? product;
+  const pricingType = selectedPricingType;
 
   return (
     <form action={action} className="mt-6 space-y-5">
@@ -150,30 +155,81 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
         )}
       </div>
       <div>
-        <label className="block text-sm font-medium" htmlFor="priceCOP">
-          Precio en pesos por unidad (COP)
-        </label>
-        <input
-          aria-describedby={state.fieldErrors?.priceCOP ? "price-hint price-error" : "price-hint"}
-          aria-invalid={Boolean(state.fieldErrors?.priceCOP)}
-          className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"
-          defaultValue={values?.priceCOP ?? ""}
-          id="priceCOP"
-          inputMode="numeric"
-          maxLength={16}
-          name="priceCOP"
-          required
-          type="text"
-        />
-        <p className="mt-1 text-sm text-slate-600" id="price-hint">
-          Por ejemplo, $2.000 si vendes cada kilo a dos mil pesos.
-        </p>
-        {state.fieldErrors?.priceCOP && (
-          <p className="mt-1 text-sm text-red-800" id="price-error">
-            {state.fieldErrors.priceCOP}
-          </p>
-        )}
+        <fieldset
+          aria-describedby={
+            state.fieldErrors?.pricingType ? "pricing-type-error" : undefined
+          }
+          aria-invalid={Boolean(state.fieldErrors?.pricingType)}
+          className="space-y-3"
+        >
+          <legend className="block text-sm font-medium">Precio de la oferta</legend>
+          <label className="flex items-start gap-3 rounded-xl border border-slate-300 p-3">
+            <input
+              checked={pricingType === "FIXED"}
+              className="mt-1 size-4"
+              name="pricingType"
+              onChange={() => setSelectedPricingType("FIXED")}
+              type="radio"
+              value="FIXED"
+            />
+            <span>
+              <span className="block font-medium">Indicar un precio</span>
+              <span className="text-sm text-slate-600">
+                Los compradores pueden enviar solicitudes con el precio publicado.
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 rounded-xl border border-slate-300 p-3">
+            <input
+              checked={pricingType === "NEGOTIABLE"}
+              className="mt-1 size-4"
+              name="pricingType"
+              onChange={() => setSelectedPricingType("NEGOTIABLE")}
+              type="radio"
+              value="NEGOTIABLE"
+            />
+            <span>
+              <span className="block font-medium">Precio a convenir</span>
+              <span className="text-sm text-slate-600">
+                El comprador coordinará directamente contigo; la negociación y
+                compra continúan fuera de Agricultor.
+              </span>
+            </span>
+          </label>
+          {state.fieldErrors?.pricingType && (
+            <p className="text-sm text-red-800" id="pricing-type-error">
+              {state.fieldErrors.pricingType}
+            </p>
+          )}
+        </fieldset>
       </div>
+      {pricingType === "FIXED" && (
+        <div>
+          <label className="block text-sm font-medium" htmlFor="priceCOP">
+            Precio en pesos por unidad (COP)
+          </label>
+          <input
+            aria-describedby={state.fieldErrors?.priceCOP ? "price-hint price-error" : "price-hint"}
+            aria-invalid={Boolean(state.fieldErrors?.priceCOP)}
+            className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"
+            defaultValue={values?.priceCOP ?? ""}
+            id="priceCOP"
+            inputMode="numeric"
+            maxLength={16}
+            name="priceCOP"
+            required
+            type="text"
+          />
+          <p className="mt-1 text-sm text-slate-600" id="price-hint">
+            Por ejemplo, $2.000 si vendes cada kilo a dos mil pesos.
+          </p>
+          {state.fieldErrors?.priceCOP && (
+            <p className="mt-1 text-sm text-red-800" id="price-error">
+              {state.fieldErrors.priceCOP}
+            </p>
+          )}
+        </div>
+      )}
       <div>
         <label className="block text-sm font-medium" htmlFor="municipality">
           Municipio o localidad

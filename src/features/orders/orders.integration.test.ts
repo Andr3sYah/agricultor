@@ -270,6 +270,74 @@ describe(
       assert.ok(restored.reservedQuantity.equals("0"));
     });
 
+    it("does not create an order or reserve inventory for a price-to-be-agreed offer", async () => {
+      const product = await database.product.create({
+        data: {
+          ownerId: producer.userId,
+          name: "Oferta para acordar precio",
+          category: "OTHER",
+          unit: "KG",
+          municipality: "Local",
+          isPublished: true,
+          pricingType: "NEGOTIABLE",
+          priceCOP: null,
+          availableQuantity: new Prisma.Decimal("4"),
+        },
+        select: { id: true },
+      });
+
+      const request = await requestOrderWithoutEmail(buyerOne, {
+        productId: product.id,
+        expectedUnit: "KG",
+        expectedPriceCOP: "",
+        quantity: "1",
+        idempotencyKey: newIdempotencyKey(),
+      });
+      assert.deepEqual(request, { ok: false, code: "price-unavailable" });
+      assert.equal(
+        await database.order.count({ where: { productId: product.id } }),
+        0,
+      );
+      const unchanged = await database.product.findUniqueOrThrow({
+        where: { id: product.id },
+      });
+      assert.ok(unchanged.availableQuantity.equals("4"));
+      assert.ok(unchanged.reservedQuantity.equals("0"));
+
+      await database.product.update({
+        where: { id: product.id },
+        data: { pricingType: "FIXED", priceCOP: 1500 },
+      });
+      const pricedRequest = await requestOrderWithoutEmail(buyerOne, {
+        productId: product.id,
+        expectedUnit: "KG",
+        expectedPriceCOP: "1500",
+        quantity: "1",
+        idempotencyKey: newIdempotencyKey(),
+      });
+      assert.equal(pricedRequest.ok, true);
+
+      await database.product.update({
+        where: { id: product.id },
+        data: { pricingType: "NEGOTIABLE", priceCOP: null },
+      });
+      const requestAfterEdit = await requestOrderWithoutEmail(buyerOne, {
+        productId: product.id,
+        expectedUnit: "KG",
+        expectedPriceCOP: "1500",
+        quantity: "1",
+        idempotencyKey: newIdempotencyKey(),
+      });
+      assert.deepEqual(requestAfterEdit, {
+        ok: false,
+        code: "price-unavailable",
+      });
+      assert.equal(
+        await database.order.count({ where: { productId: product.id } }),
+        1,
+      );
+    });
+
     it("audits manual price changes once and enforces owner and expected-price checks", async () => {
       const product = await database.product.create({
         data: {

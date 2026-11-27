@@ -145,6 +145,7 @@ function reservationDatabase() {
               isPublished: true,
               unit: "KG",
               priceCOP: 1200,
+              pricingType: "FIXED",
             }
           : { name: "Papa", unit: "KG", priceCOP: 1200 },
       updateMany: async () => ({ count: 1 }),

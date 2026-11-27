@@ -23,6 +23,7 @@ describe("public catalog projection", () => {
         category: "TUBERS",
         availableQuantity: "4.5",
         unit: "KG",
+        pricingType: "FIXED",
         priceCOP: 3200,
         municipality: "La Vega",
         isPublished: true,
@@ -33,6 +34,7 @@ describe("public catalog projection", () => {
         category: "GRAINS",
         availableQuantity: "8",
         unit: "KG",
+        pricingType: "FIXED",
         priceCOP: 2800,
         municipality: "La Vega",
         isPublished: false,
@@ -43,6 +45,7 @@ describe("public catalog projection", () => {
         category: "GRAINS",
         availableQuantity: "6",
         unit: "KG",
+        pricingType: "FIXED",
         priceCOP: 5000,
         municipality: "La Vega",
         isPublished: false,
@@ -53,11 +56,12 @@ describe("public catalog projection", () => {
         category: "OTHER",
         availableQuantity: "0",
         unit: "UNIT",
+        pricingType: "FIXED",
         priceCOP: 1000,
         municipality: "La Vega",
         isPublished: true,
       },
-    ];
+    ] as const;
 
     assert.deepEqual(getPublicProducts(products), [
       {
@@ -66,6 +70,7 @@ describe("public catalog projection", () => {
         category: "TUBERS",
         availableQuantity: "4.5",
         unit: "KG",
+        pricingType: "FIXED",
         priceCOP: 3200,
         municipality: "La Vega",
       },
@@ -89,11 +94,12 @@ describe("public catalog projection", () => {
         availableQuantity: "0",
         reservedQuantity: "2.5",
         unit: "KG",
+        pricingType: "FIXED",
         priceCOP: 3200,
         municipality: "La Vega",
         isPublished: true,
       },
-    ];
+    ] as const;
 
     assert.deepEqual(getPublicProducts(products).map(({ id }) => id), [
       "reserved-product",
@@ -107,6 +113,7 @@ describe("public catalog projection", () => {
       category: "TUBERS",
       availableQuantity: "4.5",
       unit: "KG",
+      pricingType: "FIXED" as const,
       priceCOP: 3200,
       municipality: "La Vega",
       isPublished: true,
@@ -124,6 +131,7 @@ describe("public catalog projection", () => {
       "category",
       "availableQuantity",
       "unit",
+      "pricingType",
       "priceCOP",
       "municipality",
     ]);
@@ -140,6 +148,7 @@ describe("public catalog projection", () => {
       category: "TUBERS",
       availableQuantity: "4.5",
       unit: "KG",
+      pricingType: "FIXED" as const,
       priceCOP: 3200,
       municipality: "La Vega",
       isPublished: true,
@@ -167,6 +176,31 @@ describe("public catalog projection", () => {
     assert.match(metadata.description, /4,5 Kilogramo \(kg\) disponibles/);
     assert.match(metadata.description, /La Vega/);
     assert.doesNotMatch(metadata.description, /private-owner|Dirección privada/);
+  });
+
+  it("projects negotiable offers without a numeric price or misleading metadata", () => {
+    const [product] = getPublicProducts([
+      {
+        id: "negotiable-yuca",
+        name: "Yuca",
+        category: "TUBERS",
+        availableQuantity: "4.5",
+        unit: "KG",
+        pricingType: "NEGOTIABLE" as const,
+        priceCOP: null,
+        municipality: "La Vega",
+        isPublished: true,
+      },
+    ]);
+
+    assert.equal(product.pricingType, "NEGOTIABLE");
+    assert.equal(product.priceCOP, null);
+    const metadata = getPublicProductMetadata(
+      product,
+      new URL("https://agricultor.example"),
+    );
+    assert.match(metadata.description, /Precio a convenir/);
+    assert.doesNotMatch(metadata.description, /\$0/);
   });
 });
 
@@ -275,10 +309,12 @@ describe("public catalog query and pagination", () => {
       { id: "asc" },
     ]);
     assert.deepEqual(getCatalogOrderBy("precio-asc"), [
+      { pricingType: "asc" },
       { priceCOP: "asc" },
       { id: "asc" },
     ]);
     assert.deepEqual(getCatalogOrderBy("precio-desc"), [
+      { pricingType: "asc" },
       { priceCOP: "desc" },
       { id: "asc" },
     ]);

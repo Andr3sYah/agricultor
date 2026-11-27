@@ -3,7 +3,7 @@ import { canManageProducts, type ProductActor } from "./product-access";
 
 export type ManualProductPriceUpdateResult =
   | { ok: true; changed: boolean }
-  | { ok: false; code: "unauthorized" | "invalid" | "not-found" | "conflict" };
+  | { ok: false; code: "unauthorized" | "invalid" | "not-found" | "not-fixed" | "conflict" };
 
 export async function updateManualProductPrice(
   actor: ProductActor,
@@ -38,11 +38,14 @@ export async function updateManualProductPrice(
         ownerId: actor.userId,
         unit: input.unit,
       },
-      select: { id: true, priceCOP: true },
+      select: { id: true, priceCOP: true, pricingType: true },
     });
 
     if (!product) {
       return { ok: false, code: "not-found" };
+    }
+    if (product.pricingType !== "FIXED" || product.priceCOP === null) {
+      return { ok: false, code: "not-fixed" };
     }
     if (product.priceCOP === input.newPriceCOP) {
       return { ok: true, changed: false };
@@ -56,6 +59,7 @@ export async function updateManualProductPrice(
         id: product.id,
         ownerId: actor.userId,
         unit: input.unit,
+        pricingType: "FIXED",
         priceCOP: input.expectedPriceCOP,
       },
       data: { priceCOP: input.newPriceCOP },

@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { SellerPublicContact } from "./seller-public-contact";
 import {
   getSellerContactVisibility,
   getSellerPublicContact,
@@ -130,5 +133,52 @@ describe("seller profile contact opt-in normalization", () => {
       municipality: "La Vega",
     });
     assert.equal("preciseAddress" in (publicContact ?? {}), false);
+  });
+
+  it("only exposes WhatsApp when its separate public-contact opt-in is enabled", () => {
+    const profile = {
+      municipality: "La Vega",
+      neighborhood: "El Porvenir",
+      whatsapp: "573001234567",
+      whatsappPublic: false,
+      phone: "573011234567",
+      phonePublic: true,
+      email: "ventas@example.test",
+      emailPublic: true,
+      publicContactConsentAt: new Date("2026-11-27T00:00:00.000Z"),
+    };
+
+    assert.equal("whatsapp" in (getSellerPublicContact(profile) ?? {}), false);
+    assert.equal(
+      getSellerPublicContact({ ...profile, whatsappPublic: true })?.whatsapp,
+      "573001234567",
+    );
+  });
+
+  it("renders negotiation guidance and only the seller's opted-in public channels", () => {
+    const markup = renderToStaticMarkup(
+      createElement(SellerPublicContact, {
+        negotiating: true,
+        profile: {
+          municipality: "La Vega",
+          neighborhood: "El Porvenir",
+          whatsapp: "573001234567",
+          whatsappPublic: true,
+          phone: "573011234567",
+          phonePublic: true,
+          email: "ventas@example.test",
+          emailPublic: true,
+          publicContactConsentAt: new Date("2026-11-27T00:00:00.000Z"),
+        },
+      }),
+    );
+
+    assert.match(markup, /Contacta al vendedor para acordar el precio/);
+    assert.match(markup, /fuera de Agricultor/);
+    assert.match(markup, /href="https:\/\/wa\.me\/573001234567"/);
+    assert.match(markup, /href="tel:\+573011234567"/);
+    assert.match(markup, /href="mailto:ventas@example\.test"/);
+    assert.match(markup, /El Porvenir, La Vega/);
+    assert.doesNotMatch(markup, /dirección exacta/i);
   });
 });

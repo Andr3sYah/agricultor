@@ -70,7 +70,8 @@ export default async function EditProductPage({
             category: product.category,
             availableQuantity: product.availableQuantity.toString(),
             unit: product.unit,
-            priceCOP: String(product.priceCOP),
+            pricingType: product.pricingType,
+            priceCOP: product.priceCOP?.toString() ?? "",
             municipality: product.municipality,
           }}
         />

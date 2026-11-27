@@ -105,7 +105,11 @@ export default async function FavoritesPage() {
                   </div>
                   <div>
                     <dt className="font-medium">Precio por unidad</dt>
-                    <dd>{copFormatter.format(product.priceCOP)}</dd>
+                    <dd>
+                      {product.pricingType === "FIXED" && product.priceCOP !== null
+                        ? copFormatter.format(product.priceCOP)
+                        : "Consultar precio"}
+                    </dd>
                   </div>
                   <div>
                     <dt className="font-medium">Municipio</dt>

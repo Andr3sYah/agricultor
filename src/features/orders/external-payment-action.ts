@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma, type OrderDeliveryDetails } from "@/generated/prisma/client";
 import { getCurrentIdentity } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
-import { hasPaymentReceipt, isExternalPaymentAvailable, isPaymentEventAvailable, isPaymentReceiptAvailable, parsePaymentReference, parseWompiPaymentLink } from "./external-payment";
+import { canUseWompiForProduct, hasPaymentReceipt, isExternalPaymentAvailable, isPaymentEventAvailable, isPaymentReceiptAvailable, parsePaymentReference, parseWompiPaymentLink } from "./external-payment";
 
 type PaymentState = { message: string; ok?: boolean };
 
@@ -16,7 +16,11 @@ export async function saveExternalPayment(delivery: OrderDeliveryDetails, _previ
   if (!await isExternalPaymentAvailable()) return { message: "Esta opción todavía no está disponible." };
   const order = await prisma.order.findFirst({
     where: { id: orderId, producerId: actor.userId, status: "ACCEPTED" },
-    select: { id: true, sellerContact: { select: { orderId: true } } },
+    select: {
+      id: true,
+      sellerContact: { select: { orderId: true } },
+      product: { select: { pricingType: true, priceCOP: true } },
+    },
   });
   if (!order) return { message: "No encontramos ese pedido aceptado en tu cuenta." };
   if (await hasPaymentReceipt(orderId)) return { message: "El pago ya está confirmado." };
@@ -30,6 +34,11 @@ export async function saveExternalPayment(delivery: OrderDeliveryDetails, _previ
   if (method !== "TRANSFER" && method !== "ON_DELIVERY" && method !== "WOMPI") {
     return { message: "Elige cómo se acordó pagar." };
   }
+  if (method === "WOMPI" && !canUseWompiForProduct(order.product)) {
+    return {
+      message: "Wompi solo está disponible para ofertas con precio fijo. Esta oferta se negocia directamente con el vendedor.",
+    };
+  }
   const wompiUrl = method === "WOMPI" ? parseWompiPaymentLink(form.get("wompiUrl")) : null;
   if (method === "WOMPI" && (!wompiUrl || form.get("wompiChecked") !== "on")) {
     return { message: "Pega un enlace oficial de Wompi y confirma que corresponde a este pedido." };
@@ -40,9 +49,13 @@ export async function saveExternalPayment(delivery: OrderDeliveryDetails, _previ
         SELECT d."orderId"
         FROM "OrderDeliveryDetails" d
         JOIN "OrderDeliveryConfirmation" c ON c."orderId" = d."orderId"
+        JOIN "Order" o ON o."id" = d."orderId"
+        LEFT JOIN "Product" product ON product."id" = o."productId"
         WHERE d."orderId" = ${orderId} AND d."method" = ${delivery.method}
           AND d."when" = ${delivery.when} AND d."place" = ${delivery.place}
           AND d."costCOP" = ${delivery.costCOP}
+          AND (${method} <> 'WOMPI' OR
+            (product."pricingType" = 'FIXED' AND product."priceCOP" > 0))
         FOR UPDATE OF d
       )
       INSERT INTO "OrderExternalPayment" ("orderId", "method", "wompiUrl")
@@ -83,8 +96,11 @@ export async function confirmExternalPayment(
       FROM "OrderExternalPayment" p
       JOIN "OrderDeliveryDetails" d ON d."orderId" = p."orderId"
       JOIN "Order" o ON o."id" = p."orderId"
+      LEFT JOIN "Product" product ON product."id" = o."productId"
       WHERE p."orderId" = ${orderId} AND o."producerId" = ${actor.userId} AND o."status" = 'ACCEPTED'
         AND p."method" = ${method} AND p."wompiUrl" IS NOT DISTINCT FROM ${wompiUrl}::text
+        AND (${method} <> 'WOMPI' OR
+          (product."pricingType" = 'FIXED' AND product."priceCOP" > 0))
         AND round(o."requestedQuantity" * o."priceCOP") + d."costCOP" = ${expectedAmountCOP}::numeric
       FOR UPDATE OF d, p
     ), recorded AS (

@@ -38,7 +38,8 @@ function productData(data: {
   category: string;
   availableQuantity: string;
   unit: string;
-  priceCOP: number;
+  pricingType: "FIXED" | "NEGOTIABLE";
+  priceCOP: number | null;
   municipality: string;
 }) {
   return {
@@ -46,7 +47,11 @@ function productData(data: {
     category: data.category,
     availableQuantity: new Prisma.Decimal(data.availableQuantity),
     unit: data.unit,
-    priceCOP: data.priceCOP,
+    pricingType: data.pricingType,
+    priceCOP: data.pricingType === "FIXED" ? data.priceCOP : null,
+    ...(data.pricingType === "NEGOTIABLE"
+      ? { priceReferenceEnabled: false, priceReferenceConsentAt: null }
+      : {}),
     municipality: data.municipality,
   };
 }
@@ -66,7 +71,7 @@ const MAX_PRODUCT_INVENTORY = new Prisma.Decimal("999999999.999");
 function submittedValues(formData: FormData): ProductFormState["values"] {
   const values: Partial<Record<ProductField, string>> = {};
   const fields: ProductField[] = [
-    "name", "category", "availableQuantity", "unit", "priceCOP", "municipality",
+    "name", "category", "availableQuantity", "unit", "pricingType", "priceCOP", "municipality",
   ];
   for (const field of fields) {
     const value = formData.get(field);
@@ -151,7 +156,7 @@ export async function updateProduct(
   const updatedCount = await prisma.$transaction(async (transaction) => {
     const current = await transaction.product.findFirst({
       where: { id: productId, ownerId: identity.userId },
-      select: { priceCOP: true },
+      select: { priceCOP: true, pricingType: true },
     });
     if (!current) return 0;
 
@@ -160,6 +165,7 @@ export async function updateProduct(
         id: productId,
         ownerId: identity.userId,
         priceCOP: current.priceCOP,
+        pricingType: current.pricingType,
         OR: [{ unit: result.data.unit }, { reservedQuantity: 0 }],
         reservedQuantity: {
           lte: MAX_PRODUCT_INVENTORY.minus(
@@ -171,7 +177,11 @@ export async function updateProduct(
     });
     if (updated.count !== 1) return 0;
 
-    if (current.priceCOP !== result.data.priceCOP) {
+    if (
+      current.priceCOP !== null &&
+      result.data.priceCOP !== null &&
+      current.priceCOP !== result.data.priceCOP
+    ) {
       const appliedAt = new Date();
       await transaction.productPriceChange.create({
         data: {
@@ -215,6 +225,7 @@ export async function updateProduct(
 
   revalidatePath("/mi-cuenta");
   revalidatePath("/mi-cuenta/productos");
+  revalidatePath("/mi-cuenta/favoritos");
   revalidatePath(`/mi-cuenta/productos/${productId}/editar`);
   revalidatePublicProduct(productId);
   return { ok: true, message: "Actualizamos el producto." };
@@ -255,7 +266,9 @@ export async function updateProductPrice(
     return {
       message: result.code === "not-found"
         ? "No encontramos ese producto en tu cuenta."
-        : "El producto o su precio cambió. Revisa el valor actual antes de guardar.",
+        : result.code === "not-fixed"
+          ? "Edita el producto para cambiarlo a una oferta con precio fijo."
+          : "El producto o su precio cambió. Revisa el valor actual antes de guardar.",
     };
   }
   if (!result.ok) {
@@ -299,13 +312,30 @@ export async function setProductPriceReferenceOptIn(
   }
 
   const updated = await prisma.product.updateMany({
-    where: { id: productId, ownerId: identity.userId },
+    where: {
+      id: productId,
+      ownerId: identity.userId,
+      ...(enabled === "true"
+        ? { pricingType: "FIXED", priceCOP: { not: null } }
+        : {}),
+    },
     data: {
       priceReferenceEnabled: enabled === "true",
       priceReferenceConsentAt: enabled === "true" ? new Date() : null,
     },
   });
   if (updated.count !== 1) {
+    if (enabled === "true") {
+      const current = await prisma.product.findFirst({
+        where: { id: productId, ownerId: identity.userId },
+        select: { pricingType: true, priceCOP: true },
+      });
+      if (current && (current.pricingType !== "FIXED" || current.priceCOP === null)) {
+        return {
+          message: "Las referencias manuales solo están disponibles para ofertas con precio fijo.",
+        };
+      }
+    }
     return { message: "No encontramos ese producto en tu cuenta." };
   }
 
