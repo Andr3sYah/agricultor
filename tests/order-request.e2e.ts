@@ -870,6 +870,12 @@ async function main(): Promise<void> {
       await producerPage.locator('input[name="pricingType"][value="NEGOTIABLE"]').check();
       await cropMunicipality.fill(directSaleMunicipality);
       await producerPage.getByRole("button", { name: "Vender producto" }).click();
+      const negotiableOfferCard = producerPage.getByRole("listitem").filter({
+        hasText: negotiableSaleName,
+      });
+      await expect(
+        negotiableOfferCard.getByText("Oferta pública en el catálogo", { exact: true }),
+      ).toBeVisible();
       const negotiableSale = await database.product.findFirstOrThrow({
         where: { ownerId: producer.id, name: negotiableSaleName },
       });
@@ -891,7 +897,8 @@ async function main(): Promise<void> {
       ).toContainText(/3\.500/);
       await expect(
         publicCatalog.getByRole("listitem").filter({ hasText: negotiableSaleName }),
-      ).toContainText("Precio a convenir");
+      ).toContainText("Consultar precio");
+      await publicCatalog.goto(harvestCatalogUrl);
       await publicCrop.getByRole("link", { name: harvestName, exact: true }).click();
       await publicCatalog.getByRole("link", { name: "Ver perfil de Distribución de prueba" }).click();
       await expect(publicCatalog.getByRole("heading", { name: "Distribución de prueba" })).toBeVisible();
