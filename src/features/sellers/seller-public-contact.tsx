@@ -21,15 +21,16 @@ export function SellerPublicContact({
       </p>
       {negotiating && (
         <p className="mt-2 text-sm text-foreground/75">
-          La negociación y compra continúan directamente con el vendedor, fuera de
-          Agricultor. No se crea una solicitud ni se procesa un pago aquí.
+          Contacta al vendedor por uno de los medios disponibles para consultar y
+          acordar el precio. La negociación y compra continúan fuera de Agricultor;
+          aquí no se crea una solicitud ni se procesa un pago.
         </p>
       )}
-      {contact.whatsapp && (
+      {contact.whatsappUrl && (
         <a
           aria-label="Contactar al vendedor por WhatsApp"
           className="mt-2 inline-flex min-h-11 items-center rounded-lg bg-primary px-4 font-semibold text-white underline-offset-2 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          href={`https://wa.me/${contact.whatsapp}`}
+          href={contact.whatsappUrl}
           rel="noreferrer"
           target="_blank"
         >

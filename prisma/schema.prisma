@@ -76,6 +76,7 @@ model SellerProfile {
   exactLocationConsentAt DateTime? @db.Timestamp(3)
   published   Boolean @default(false)
   whatsapp    String? @db.VarChar(12)
+  whatsappLink String? @db.VarChar(64)
   whatsappPublic Boolean @default(false)
   phone       String? @db.VarChar(12)
   phonePublic Boolean @default(false)

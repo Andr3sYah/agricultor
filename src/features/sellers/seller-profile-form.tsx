@@ -41,13 +41,63 @@ export function SellerProfileForm({ profile }: { profile: SellerProfile | null }
       <fieldset className="space-y-3 rounded-lg border border-slate-200 p-3">
         <legend className="px-1 font-semibold">Datos de contacto para tus ofertas</legend>
         <p className="text-sm text-slate-700">El celular y el correo son obligatorios para ofrecer productos. Para proteger datos que antes mantuviste privados, no los prellenamos: escribe los que aceptas mostrar.</p>
-        <label className="block font-medium">WhatsApp
-          <input className={fieldClass} defaultValue={profile?.whatsappPublic ? profile.whatsapp?.slice(2) : ""} maxLength={24} name="whatsapp" placeholder="Celular de 10 dígitos" type="tel" />
-        </label>
+        <div className="space-y-2">
+          <p className="font-medium">WhatsApp</p>
+          <label className="flex min-h-11 items-center gap-3">
+            <input
+              className="size-5"
+              defaultChecked={!profile?.whatsappPublic || (!profile.whatsapp && !profile.whatsappLink)}
+              name="whatsappMode"
+              type="radio"
+              value="PHONE"
+            />
+            Usar el mismo celular de contacto
+          </label>
+          <label className="flex min-h-11 items-center gap-3">
+            <input
+              className="size-5"
+              defaultChecked={Boolean(profile?.whatsappPublic && profile.whatsapp)}
+              name="whatsappMode"
+              type="radio"
+              value="OTHER_PHONE"
+            />
+            Usar otro número
+          </label>
+          <input
+            aria-label="Otro número de WhatsApp"
+            className={fieldClass}
+            defaultValue={profile?.whatsappPublic ? profile.whatsapp?.slice(2) ?? "" : ""}
+            inputMode="tel"
+            maxLength={24}
+            name="whatsapp"
+            placeholder="Celular colombiano de 10 dígitos"
+            type="tel"
+          />
+          <label className="flex min-h-11 items-center gap-3">
+            <input
+              className="size-5"
+              defaultChecked={Boolean(profile?.whatsappPublic && profile.whatsappLink)}
+              name="whatsappMode"
+              type="radio"
+              value="LINK"
+            />
+            Pegar un enlace directo de WhatsApp
+          </label>
+          <input
+            aria-label="Enlace directo de WhatsApp"
+            className={fieldClass}
+            defaultValue={profile?.whatsappPublic ? profile.whatsappLink ?? "" : ""}
+            maxLength={300}
+            name="whatsappLink"
+            placeholder="https://wa.me/573001234567"
+            type="url"
+          />
+        </div>
         <label className="flex min-h-11 items-center gap-3">
           <input className="size-5" defaultChecked={profile?.whatsappPublic} name="whatsappPublic" type="checkbox" />
           Publicar WhatsApp
         </label>
+        <p className="text-sm text-slate-600">Elige el mismo celular, otro número colombiano o un enlace de WhatsApp. Solo se muestra si aceptas publicar tus datos de contacto y marcas esta opción.</p>
         <label className="block font-medium">Celular
           <input className={fieldClass} defaultValue={profile?.phonePublic ? profile.phone?.slice(2) : ""} maxLength={24} name="phone" placeholder="Celular de 10 dígitos" required type="tel" />
         </label>

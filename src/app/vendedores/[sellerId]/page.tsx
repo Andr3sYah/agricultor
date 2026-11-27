@@ -29,6 +29,7 @@ export default async function PublicSellerProfile({ params }: { params: Promise<
       exactLocationConsentAt: true,
       ownerId: true,
       whatsapp: true,
+      whatsappLink: true,
       whatsappPublic: true,
       phone: true,
       phonePublic: true,

@@ -10,7 +10,7 @@ import {
   isSellerProfileAvailable,
   normalizeSellerExactLocation,
   normalizeRequiredSellerContact,
-  normalizeSellerPhone,
+  normalizeSellerWhatsappChoice,
 } from "./seller-profile";
 
 type ProfileState = { message: string; ok?: boolean };
@@ -32,18 +32,23 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
   ) {
     return { message: "Revisa el nombre, el municipio y la descripción." };
   }
-  const rawWhatsapp = form.get("whatsapp");
-  const whatsapp = normalizeSellerPhone(rawWhatsapp);
   const contact = normalizeRequiredSellerContact({
     phone: form.get("phone"),
     email: form.get("email"),
     neighborhood: form.get("neighborhood"),
   });
-  if ((typeof rawWhatsapp === "string" && rawWhatsapp.trim() && !whatsapp) ||
-      !contact) {
+  if (!contact) {
     return { message: "Completa un celular, un correo válidos y un barrio o vereda aproximados, sin dirección exacta." };
   }
   const { phone, email, neighborhood } = contact;
+  const whatsappChoice = normalizeSellerWhatsappChoice(
+    form.get("whatsappMode"),
+    form.get("whatsapp"),
+    form.get("whatsappLink"),
+  );
+  if (!whatsappChoice) {
+    return { message: "Revisa el número o el enlace de WhatsApp elegido." };
+  }
   const rawExactLocation = form.get("exactLocation");
   const exactLocation = normalizeSellerExactLocation(rawExactLocation);
   const publishExactLocation =
@@ -63,7 +68,11 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
   );
   const publishContacts = form.get("publishContacts") === "on";
   const published = form.get("published") === "on" && publishContacts;
-  const visibility = getSellerContactVisibility(form, { whatsapp, phone, email });
+  const visibility = getSellerContactVisibility(form, {
+    ...whatsappChoice,
+    phone,
+    email,
+  });
   const data = {
     ...values,
     published,
@@ -72,7 +81,7 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
     exactLocationPublic,
     exactLocationConsentAt:
       exactLocationPublic ? new Date() : null,
-    whatsapp,
+    ...whatsappChoice,
     ...visibility,
     phone,
     email,
