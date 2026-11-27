@@ -12,6 +12,7 @@ import {
   parseCatalogFilters,
   PUBLIC_CATALOG_PAGE_SIZE,
 } from "./public-products";
+import { getPublicSellerOfferCondition } from "@/features/sellers/seller-contact";
 
 describe("public catalog projection", () => {
   it("excludes private, withdrawn, and zero-quantity products", () => {
@@ -170,6 +171,25 @@ describe("public catalog projection", () => {
 });
 
 describe("public catalog query and pagination", () => {
+  it("only exposes offers with explicitly accepted public contact details", () => {
+    assert.deepEqual(getPublicSellerOfferCondition(), {
+      owner: {
+        is: {
+          sellerProfile: {
+            is: {
+              neighborhood: { not: null },
+              publicContactConsentAt: { not: null },
+              phone: { not: null },
+              phonePublic: true,
+              email: { not: null },
+              emailPublic: true,
+            },
+          },
+        },
+      },
+    });
+  });
+
   it("trims a name filter and treats SQL pattern characters literally", () => {
     const filters = parseCatalogFilters({ producto: "  Papa %_  " });
     assert.equal(filters.name, "Papa %_");
@@ -272,6 +292,7 @@ describe("public catalog query and pagination", () => {
       }),
       {
         isPublished: true,
+        ...getPublicSellerOfferCondition(),
         OR: [
           { availableQuantity: { gt: 0 } },
           { reservedQuantity: { gt: 0 } },
@@ -282,6 +303,7 @@ describe("public catalog query and pagination", () => {
     );
     assert.deepEqual(getPublicProductWhere({}), {
       isPublished: true,
+      ...getPublicSellerOfferCondition(),
       OR: [
         { availableQuantity: { gt: 0 } },
         { reservedQuantity: { gt: 0 } },
@@ -293,6 +315,7 @@ describe("public catalog query and pagination", () => {
     const filters = parseCatalogFilters({ unidad: "KG", cantidad: "5,125" });
     assert.deepEqual(getPublicProductWhere(filters), {
       isPublished: true,
+      ...getPublicSellerOfferCondition(),
       availableQuantity: { gte: "5.125" },
       unit: "KG",
     });
@@ -319,6 +342,7 @@ describe("public catalog query and pagination", () => {
     });
     assert.deepEqual(getPublicProductWhere(filters), {
       isPublished: true,
+      ...getPublicSellerOfferCondition(),
       OR: [
         { availableQuantity: { gt: 0 } },
         { reservedQuantity: { gt: 0 } },

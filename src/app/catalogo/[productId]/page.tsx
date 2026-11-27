@@ -20,7 +20,12 @@ import {
 } from "@/features/products/product-validation";
 import { prisma } from "@/lib/db";
 import { getCurrentIdentity } from "@/lib/auth/server";
-import { getSellerProfileHref, isSellerProfileAvailable } from "@/features/sellers/seller-profile";
+import {
+  getSellerProfileHref,
+  isSellerProfileAvailable,
+} from "@/features/sellers/seller-profile";
+import { getPublicSellerOfferCondition } from "@/features/sellers/seller-contact";
+import { SellerPublicContact } from "@/features/sellers/seller-public-contact";
 
 const metadataBase = new URL(
   process.env.VERCEL_PROJECT_PRODUCTION_URL
@@ -46,6 +51,7 @@ const getPublicProduct = cache(async (productId: string) => {
     where: {
       id: productId,
       isPublished: true,
+      ...getPublicSellerOfferCondition(),
       OR: [
         { availableQuantity: { gt: 0 } },
         { reservedQuantity: { gt: 0 } },
@@ -116,8 +122,28 @@ export default async function PublicProductPage({
 
   const priceDates = await getProductPriceDates([product]);
   const seller = await isSellerProfileAvailable() ? await prisma.sellerProfile.findFirst({
-    where: { ownerId: product.ownerId, published: true, owner: { userRoles: { some: { role: "PRODUCER" } } } },
-    select: { id: true, name: true },
+    where: {
+      ownerId: product.ownerId,
+      owner: { userRoles: { some: { role: "PRODUCER" } } },
+      neighborhood: { not: null },
+      publicContactConsentAt: { not: null },
+      phone: { not: null },
+      phonePublic: true,
+      email: { not: null },
+      emailPublic: true,
+    },
+    select: {
+      id: true,
+      name: true,
+      municipality: true,
+      neighborhood: true,
+      phone: true,
+      phonePublic: true,
+      email: true,
+      emailPublic: true,
+      publicContactConsentAt: true,
+      published: true,
+    },
   }) : null;
   const filters = parseCatalogFilters(await searchParams);
   const searchedQuantity = filters.unit === product.unit ? filters.minimumQuantity : undefined;
@@ -151,11 +177,12 @@ export default async function PublicProductPage({
           Producto publicado
         </p>
         <h1 className="mt-4 text-3xl font-semibold">{product.name}</h1>
-        {seller && (
+        {seller?.published && (
           <Link className="mt-2 inline-flex min-h-11 items-center break-words font-semibold text-emerald-900 underline" href={getSellerProfileHref(seller.id)}>
             Ver perfil de {seller.name}
           </Link>
         )}
+        {seller && <SellerPublicContact profile={seller} />}
         <dl className="mt-6 grid gap-4 text-slate-700 sm:grid-cols-2">
           <div>
             <dt className="font-medium">Categoría</dt>

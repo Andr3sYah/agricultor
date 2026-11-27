@@ -19,6 +19,8 @@ import {
 import { prisma } from "@/lib/db";
 import { getCurrentIdentity } from "@/lib/auth/server";
 import { SiteHeader } from "@/components/site-header";
+import { getPublicSellerOfferCondition } from "@/features/sellers/seller-contact";
+import { SellerPublicContact } from "@/features/sellers/seller-public-contact";
 
 const copFormatter = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -57,6 +59,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const municipalityRows = await prisma.product.findMany({
     where: {
       isPublished: true,
+      ...getPublicSellerOfferCondition(),
       OR: [
         { availableQuantity: { gt: 0 } },
         { reservedQuantity: { gt: 0 } },
@@ -95,6 +98,21 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       priceCOP: true,
       municipality: true,
       isPublished: true,
+      owner: {
+        select: {
+          sellerProfile: {
+            select: {
+              municipality: true,
+              neighborhood: true,
+              phone: true,
+              phonePublic: true,
+              email: true,
+              emailPublic: true,
+              publicContactConsentAt: true,
+            },
+          },
+        },
+      },
     },
     orderBy: getCatalogOrderBy(filters.sort),
   });
@@ -104,6 +122,9 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       availableQuantity: product.availableQuantity.toString(),
       reservedQuantity: product.reservedQuantity.toString(),
     })),
+  );
+  const sellerProfilesByProductId = new Map(
+    records.map(({ id, owner }) => [id, owner.sellerProfile]),
   );
   const priceDates = await getProductPriceDates(products);
   const identity = await getCurrentIdentity();
@@ -142,8 +163,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         </p>
         <h1 className="mt-4 text-3xl font-semibold">Catálogo público</h1>
         <p className="mt-3 max-w-2xl text-slate-700">
-          Consulta ofertas publicadas con inventario disponible o reservado. La información
-          de contacto y ubicación precisa de quienes producen no se muestra.
+          Consulta ofertas publicadas con inventario disponible o reservado. Cada oferta muestra el celular, correo y ubicación aproximada (barrio o vereda y municipio) que el vendedor aceptó compartir. No publicamos direcciones exactas.
         </p>
       </section>
       <form
@@ -363,6 +383,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             const unit =
               PRODUCT_UNITS.find(({ value }) => value === product.unit)?.label ??
               product.unit;
+            const sellerProfile = sellerProfilesByProductId.get(product.id);
 
             return (
               <li
@@ -411,6 +432,9 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                     <dd>{product.municipality}</dd>
                   </div>
                 </dl>
+                {sellerProfile && (
+                  <SellerPublicContact profile={sellerProfile} />
+                )}
                 {Number(product.availableQuantity) > 0 && (
                   <Link
                     aria-label={`Solicitar este producto: ${product.name}`}

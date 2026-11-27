@@ -150,7 +150,12 @@ El perfil comercial público requiere la migración
 `20261120030000_seller_profile`. Cada vendedor decide si lo publica. Los
 campos de contacto por canal y sus permisos de visibilidad requieren la
 migración `20261125193000_seller_profile_contact_opt_in`; son privados por
-defecto.
+defecto. La migración `20261127100000_public_seller_contacts` agrega el barrio
+aproximado y el registro de aceptación explícita para publicar celular y correo.
+No completa datos de vendedores existentes y retira del catálogo las ofertas ya
+publicadas hasta que cada vendedor complete y acepte estos datos; después debe
+volver a publicar sus ofertas. Los datos de contacto que anteriormente se
+mantuvieron privados no se prellenan ni se publican automáticamente.
 
 La opción de compartir WhatsApp en pedidos aceptados requiere aplicar en Neon
 la migración `20261120000000_order_seller_contact`. Hasta entonces, sigue
@@ -182,9 +187,11 @@ variables de entorno nuevas para los métodos actuales.
 
 Los productores administran sus productos y pueden publicarlos explícitamente.
 El catálogo público conserva visibles las ofertas publicadas con inventario
-disponible o reservado; si todo está reservado, no se aceptan nuevas
-solicitudes. Los campos de contacto del perfil se muestran solo si el productor
-autoriza cada canal. No se publican direcciones exactas ni coordenadas GPS.
+disponible o reservado que tengan contacto y ubicación aproximada confirmados;
+si todo está reservado, no se aceptan nuevas solicitudes. En cada oferta se
+muestran el celular, correo y barrio/vereda y municipio, solo después de la
+aceptación explícita del productor. No se publican direcciones exactas ni
+coordenadas GPS.
 Categorías, unidades y precio por unidad en pesos enteros COP siguen siendo
 hipótesis provisionales descritas en `PLAN.md`.
 

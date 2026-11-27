@@ -9,6 +9,10 @@ import {
 import { getCurrentIdentity } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
 import { canEditProduct, canManageProducts } from "./product-access";
+import {
+  getPublicSellerOfferCondition,
+  PUBLIC_SELLER_CONTACT_CONDITION,
+} from "@/features/sellers/seller-contact";
 import { updateManualProductPrice } from "./product-price-audit";
 import { hasManualPriceReferenceConsent } from "./price-reference";
 import {
@@ -402,11 +406,30 @@ export async function setProductPublication(
   }
 
   const isPublished = publishedValue === "true";
+  if (isPublished) {
+    const sellerProfile = await prisma.sellerProfile.findFirst({
+      where: {
+        ownerId: identity.userId,
+        ...PUBLIC_SELLER_CONTACT_CONDITION,
+      },
+      select: { id: true },
+    });
+    if (!sellerProfile) {
+      return {
+        message: "Completa tu perfil con celular, correo y barrio aproximado, y acepta mostrarlos antes de publicar ofertas.",
+      };
+    }
+  }
   const updated = await prisma.product.updateMany({
     where: {
       id: productId,
       ownerId: identity.userId,
-      ...(isPublished ? { availableQuantity: { gt: 0 } } : {}),
+      ...(isPublished
+        ? {
+            availableQuantity: { gt: 0 },
+            ...getPublicSellerOfferCondition(),
+          }
+        : {}),
     },
     data: { isPublished },
   });

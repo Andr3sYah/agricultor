@@ -3,6 +3,7 @@ import {
   PRODUCT_CATEGORIES,
   PRODUCT_UNITS,
 } from "@/features/products/product-validation";
+import { getPublicSellerOfferCondition } from "@/features/sellers/seller-contact";
 
 export type CatalogProductRecord = {
   id: string;
@@ -137,6 +138,7 @@ export function getPublicProductWhere(
 
   return {
     isPublished: true,
+    ...getPublicSellerOfferCondition(),
     ...(filters.unit && filters.minimumQuantity
       ? { availableQuantity: { gte: filters.minimumQuantity } }
       : {

@@ -65,6 +65,7 @@ model SellerProfile {
   name        String  @db.VarChar(80)
   description String  @db.VarChar(600)
   municipality String @db.VarChar(100)
+  neighborhood String? @db.VarChar(100)
   published   Boolean @default(false)
   whatsapp    String? @db.VarChar(12)
   whatsappPublic Boolean @default(false)
@@ -72,6 +73,7 @@ model SellerProfile {
   phonePublic Boolean @default(false)
   email       String? @db.VarChar(254)
   emailPublic Boolean @default(false)
+  publicContactConsentAt DateTime? @db.Timestamp(3)
 }
 
 model Session {
