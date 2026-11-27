@@ -1,5 +1,10 @@
 import { AuthForm } from "@/features/auth/auth-form";
+import {
+  EmailConfirmationNotice,
+  getEmailConfirmationNoticeState,
+} from "@/features/auth/email-confirmation-notice";
 import { getOrderRequestRedirect } from "@/features/auth/order-redirect";
+import { getCurrentSession } from "@/lib/auth/server";
 import Link from "next/link";
 
 export default async function SignInPage({
@@ -10,6 +15,13 @@ export default async function SignInPage({
   const params = await searchParams;
   const redirectTo = getOrderRequestRedirect(params.redirectTo);
   const producerIntent = params.intent === "producer";
+  const isSuccessfulConfirmation =
+    params.correo === "confirmado" && !params.error;
+  const session = isSuccessfulConfirmation ? await getCurrentSession() : null;
+  const confirmationState = getEmailConfirmationNoticeState(
+    params,
+    Boolean(session),
+  );
   const googleAuthEnabled = Boolean(
     process.env.OAUTH_CLIENT_ID && process.env.OAUTH_CLIENT_SECRET,
   );
@@ -27,20 +39,7 @@ export default async function SignInPage({
           Agricultor
         </p>
         <h1 className="mt-4 text-3xl font-semibold">Inicia sesión</h1>
-        {params.correo === "confirmado" && (
-          params.error ? (
-            <p className="mt-3 rounded-xl border border-rose-300 bg-rose-50 p-3 text-rose-950" role="alert">
-              El enlace de confirmación venció o es inválido. Puedes pedir otro abajo.
-            </p>
-          ) : (
-            <div className="mt-3 rounded-xl border border-emerald-300 bg-surface-accent p-3 text-emerald-950" role="status">
-              <p>Correo confirmado. Tu sesión se inició automáticamente.</p>
-              <Link className="mt-2 inline-flex min-h-11 items-center font-semibold text-primary underline hover:text-primary-hover" href="/mi-cuenta">
-                Ir a mi cuenta
-              </Link>
-            </div>
-          )
-        )}
+        <EmailConfirmationNotice state={confirmationState} />
         <p className="mt-3 leading-7 text-slate-700">
           Ingresa con el correo y la contraseña de tu cuenta.
         </p>

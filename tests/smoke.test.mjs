@@ -309,6 +309,16 @@ test("production sign-in page offers clear recovery and return navigation", asyn
   assert.match(html, /min-h-12/);
 });
 
+test("production confirmed-email page does not assume a session exists", async () => {
+  const response = await fetch(`${url}/iniciar-sesion?correo=confirmado`);
+  assert.equal(response.status, 200);
+  const html = await response.text();
+
+  assert.match(html, /Correo confirmado\. Ya puedes iniciar sesión/);
+  assert.doesNotMatch(html, /sesión se inició automáticamente/);
+  assert.doesNotMatch(html, /href="\/mi-cuenta"/);
+});
+
 test("production registration page reflects Google OAuth configuration", async () => {
   const response = await fetch(`${url}/crear-cuenta`);
   assert.equal(response.status, 200);
