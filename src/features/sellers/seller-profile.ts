@@ -24,3 +24,14 @@ export function normalizeSellerEmail(value: unknown): string | null {
   const email = value.trim().slice(0, 254);
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 }
+
+export function getSellerContactVisibility(
+  form: Pick<FormData, "get">,
+  contacts: { whatsapp: string | null; phone: string | null; email: string | null },
+) {
+  return {
+    whatsappPublic: Boolean(contacts.whatsapp && form.get("whatsappPublic") === "on"),
+    phonePublic: Boolean(contacts.phone && form.get("phonePublic") === "on"),
+    emailPublic: Boolean(contacts.email && form.get("emailPublic") === "on"),
+  };
+}
