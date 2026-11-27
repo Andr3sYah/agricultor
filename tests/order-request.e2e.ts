@@ -870,6 +870,12 @@ async function main(): Promise<void> {
       await producerPage.locator('input[name="pricingType"][value="NEGOTIABLE"]').check();
       await cropMunicipality.fill(directSaleMunicipality);
       await producerPage.getByRole("button", { name: "Vender producto" }).click();
+      const negotiableOfferCard = producerPage.getByRole("listitem").filter({
+        hasText: negotiableSaleName,
+      });
+      await expect(
+        negotiableOfferCard.getByText("Oferta pública en el catálogo", { exact: true }),
+      ).toBeVisible();
       const negotiableSale = await database.product.findFirstOrThrow({
         where: { ownerId: producer.id, name: negotiableSaleName },
       });
