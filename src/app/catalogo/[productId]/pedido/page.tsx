@@ -60,6 +60,9 @@ export default async function RequestOrderPage({
             select: {
               municipality: true,
               neighborhood: true,
+              exactLocation: true,
+              exactLocationPublic: true,
+              exactLocationConsentAt: true,
               phone: true,
               phonePublic: true,
               email: true,

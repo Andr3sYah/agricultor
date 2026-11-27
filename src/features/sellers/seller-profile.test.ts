@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   getSellerContactVisibility,
+  getSellerExactLocationVisibility,
   getSellerPublicContact,
   normalizeRequiredSellerContact,
   normalizeSellerEmail,
+  normalizeSellerExactLocation,
   normalizeSellerNeighborhood,
   normalizeSellerPhone,
 } from "./seller-profile";
@@ -52,6 +54,60 @@ describe("seller profile contact opt-in normalization", () => {
     assert.equal(normalizeSellerNeighborhood("Calle 10 # 12-34"), null);
     assert.equal(normalizeSellerNeighborhood("Carrera 7 11-22"), null);
     assert.equal(normalizeSellerNeighborhood("Barrio 20 de Julio"), "Barrio 20 de Julio");
+  });
+
+  it("publishes an exact location only with its separate explicit opt-in", () => {
+    assert.equal(
+      normalizeSellerExactLocation(" Finca El Roble, km 4 "),
+      "Finca El Roble, km 4",
+    );
+    assert.equal(normalizeSellerExactLocation("x".repeat(241)), null);
+    assert.equal(normalizeSellerExactLocation("Calle\0 4"), null);
+    const contactConsentOnly = new FormData();
+    contactConsentOnly.set("publishContacts", "on");
+    assert.equal(
+      getSellerExactLocationVisibility(contactConsentOnly, "Finca El Roble"),
+      false,
+    );
+    const exactLocationConsentOnly = new FormData();
+    exactLocationConsentOnly.set("publishExactLocation", "on");
+    assert.equal(
+      getSellerExactLocationVisibility(exactLocationConsentOnly, "Finca El Roble"),
+      true,
+    );
+    assert.equal(
+      getSellerExactLocationVisibility(exactLocationConsentOnly, null),
+      false,
+    );
+
+    const profile = {
+      municipality: "La Vega",
+      neighborhood: "El Porvenir",
+      exactLocation: "Finca El Roble, km 4",
+      exactLocationPublic: false,
+      exactLocationConsentAt: null,
+      phone: "573001234567",
+      phonePublic: true,
+      email: "ventas@example.com",
+      emailPublic: true,
+      publicContactConsentAt: new Date("2026-11-27T00:00:00.000Z"),
+    };
+    assert.equal(getSellerPublicContact(profile)?.exactLocation, null);
+    assert.equal(
+      getSellerPublicContact({
+        ...profile,
+        exactLocationPublic: true,
+        exactLocationConsentAt: new Date("2026-11-27T00:00:00.000Z"),
+      })?.exactLocation,
+      "Finca El Roble, km 4",
+    );
+    assert.equal(
+      getSellerPublicContact({
+        ...profile,
+        exactLocationPublic: true,
+      })?.exactLocation,
+      null,
+    );
   });
 
   it("keeps contact details private unless the new combined consent is present", () => {
@@ -128,6 +184,7 @@ describe("seller profile contact opt-in normalization", () => {
       email: "private@example.test",
       neighborhood: "El Porvenir",
       municipality: "La Vega",
+      exactLocation: null,
     });
     assert.equal("preciseAddress" in (publicContact ?? {}), false);
   });

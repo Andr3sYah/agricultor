@@ -18,8 +18,19 @@ export function SellerProfileForm({ profile }: { profile: SellerProfile | null }
       </label>
       <label className="block font-medium">Barrio o vereda (aproximado)
         <input className={fieldClass} defaultValue={profile?.neighborhood ?? ""} maxLength={100} minLength={2} name="neighborhood" placeholder="Por ejemplo, El Porvenir" required />
-        <span className="mt-1 block text-sm font-normal text-slate-600">No escribas calles, números, puntos de referencia ni una dirección exacta.</span>
+        <span className="mt-1 block text-sm font-normal text-slate-600">Escribe solo el barrio o vereda; no incluyas calles, números ni puntos de referencia aquí.</span>
       </label>
+      <fieldset className="space-y-3 rounded-lg border border-slate-200 p-3">
+        <legend className="px-1 font-semibold">Ubicación exacta (opcional)</legend>
+        <label className="block font-medium">Dirección o ubicación exacta
+          <input className={fieldClass} autoComplete="off" defaultValue={profile?.exactLocation ?? ""} maxLength={240} name="exactLocation" placeholder="Déjala vacía si no quieres compartirla" />
+        </label>
+        <label className="flex min-h-11 items-start gap-3">
+          <input className="mt-1 size-5" defaultChecked={profile?.exactLocationPublic ?? false} name="publishExactLocation" type="checkbox" />
+          Acepto publicar esta ubicación exacta en mis ofertas. Entiendo que será visible para cualquier persona.
+        </label>
+        <p className="text-sm text-slate-600">Esta decisión es independiente de compartir tu contacto y de los datos de entrega acordados para cada pedido. Si no aceptas, solo se mostrará el barrio o vereda y el municipio.</p>
+      </fieldset>
       <label className="block font-medium">Descripción
         <textarea className={fieldClass} defaultValue={profile?.description} maxLength={600} name="description" placeholder="Cuenta qué productos distribuyes o qué zonas atiendes." required rows={4} />
       </label>
