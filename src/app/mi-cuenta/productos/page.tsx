@@ -57,8 +57,9 @@ export default async function ProductsPage() {
         </p>
         <h1 className="mt-4 text-3xl font-semibold">Mis productos</h1>
         <p className="mt-3 text-slate-700">
-          Registra tu oferta y publícala en el catálogo cuando esté lista. Las
-          solicitudes recibidas aparecerán en el seguimiento de pedidos.
+          «Guardar en inventario» mantiene el producto privado. «Vender producto»
+          crea el registro de inventario y publica la oferta en catálogo en un solo paso.
+          Las solicitudes recibidas aparecerán en el seguimiento de pedidos.
         </p>
         <p className="mt-2 text-sm text-slate-700">
           Si eliges «Precio a convenir», los compradores se comunicarán contigo y
@@ -72,6 +73,12 @@ export default async function ProductsPage() {
           aria-label="Acciones de productor"
           className="mt-4 flex flex-wrap gap-4"
         >
+          <Link
+            className="font-semibold text-emerald-900 underline underline-offset-4"
+            href="#formulario-producto"
+          >
+            Vender producto
+          </Link>
           <Link
             className="font-semibold text-emerald-900 underline underline-offset-4"
             href="/mi-cuenta/pedidos"
@@ -91,7 +98,8 @@ export default async function ProductsPage() {
         <h2 className="text-2xl font-semibold">Tus productos</h2>
         {products.length === 0 ? (
           <p className="mt-4 text-slate-700">
-            Aún no tienes productos. Usa el formulario de arriba para publicar el primero.
+            Aún no tienes productos. Usa el formulario para guardar uno en privado o
+            venderlo y publicarlo de una vez.
           </p>
         ) : (
           <ul className="mt-5 space-y-4">
@@ -120,7 +128,9 @@ export default async function ProductsPage() {
                     </span>
                   </div>
                   <p className="mt-2 text-sm text-slate-700">
-                    {product.isPublished ? "Publicado" : "Privado"}
+                    {product.isPublished
+                      ? "Oferta pública en el catálogo"
+                      : "Inventario privado; no es una oferta pública"}
                   </p>
                   <dl className="mt-4 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
                     <div>

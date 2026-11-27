@@ -35,7 +35,7 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
   const pricingType = selectedPricingType;
 
   return (
-    <form action={action} className="mt-6 space-y-5">
+    <form action={action} className="mt-6 space-y-5" id="formulario-producto">
       <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
         Las fotos no están disponibles por ahora.
       </p>
@@ -252,7 +252,9 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
         )}
       </div>
       <p className="text-sm text-slate-600">
-        Más de cero disponible; cero agotado. La publicación se controla aparte.
+        Guarda en inventario para llevar el control en privado, o elige «Vender
+        producto» para guardar y publicar la oferta en un solo paso. Para vender
+        necesitas existencias y un perfil de vendedor listo para compartir contacto.
       </p>
       {state.message && (
         <p
@@ -267,18 +269,55 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
       {state.createdProductId && (
         <a
           className="inline-flex min-h-12 items-center font-semibold text-emerald-900 underline"
-          href={`#producto-${state.createdProductId}`}
+          href={
+            state.createdProductPublished
+              ? `/catalogo/${encodeURIComponent(state.createdProductId)}`
+              : `#producto-${state.createdProductId}`
+          }
         >
-          Ir al producto guardado para publicarlo
+          {state.createdProductPublished
+            ? "Ver oferta publicada"
+            : "Ir al producto guardado en inventario"}
         </a>
       )}
-      <button
-        className="min-h-12 w-full rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 disabled:opacity-60"
-        disabled={pending}
-        type="submit"
-      >
-        {pending ? "Guardando..." : editing ? "Guardar cambios" : "Agregar producto"}
-      </button>
+      {state.sellerProfileRequired && (
+        <a
+          className="inline-flex min-h-12 items-center font-semibold text-emerald-900 underline"
+          href="/mi-cuenta/perfil-vendedor"
+        >
+          Completar perfil de vendedor
+        </a>
+      )}
+      {editing ? (
+        <button
+          className="min-h-12 w-full rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 disabled:opacity-60"
+          disabled={pending}
+          type="submit"
+        >
+          {pending ? "Guardando..." : "Guardar cambios"}
+        </button>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button
+            className="min-h-12 rounded-xl border border-emerald-900 px-5 py-3 font-semibold text-emerald-950 hover:bg-emerald-50 disabled:opacity-60"
+            disabled={pending}
+            name="intent"
+            type="submit"
+            value="save"
+          >
+            {pending ? "Guardando..." : "Guardar en inventario"}
+          </button>
+          <button
+            className="min-h-12 rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 disabled:opacity-60"
+            disabled={pending}
+            name="intent"
+            type="submit"
+            value="sell"
+          >
+            {pending ? "Publicando..." : "Vender producto"}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

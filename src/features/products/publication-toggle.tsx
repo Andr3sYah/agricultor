@@ -50,6 +50,14 @@ export function PublicationToggle({
           {state.message}
         </p>
       )}
+      {state.sellerProfileRequired && (
+        <a
+          className="mt-2 inline-flex min-h-11 items-center font-semibold text-emerald-900 underline"
+          href="/mi-cuenta/perfil-vendedor"
+        >
+          Completar perfil de vendedor
+        </a>
+      )}
     </form>
   );
 }
