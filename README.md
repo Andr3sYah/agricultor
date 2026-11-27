@@ -147,7 +147,10 @@ migración `20261124120000_product_price_audit_and_reference_consent`.
 ## Catálogo, pedidos e inventario
 
 El perfil comercial público requiere la migración
-`20261120030000_seller_profile`. Cada vendedor decide si lo publica.
+`20261120030000_seller_profile`. Cada vendedor decide si lo publica. Los
+campos de contacto por canal y sus permisos de visibilidad requieren la
+migración `20261125193000_seller_profile_contact_opt_in`; son privados por
+defecto.
 
 La opción de compartir WhatsApp en pedidos aceptados requiere aplicar en Neon
 la migración `20261120000000_order_seller_contact`. Hasta entonces, sigue
