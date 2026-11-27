@@ -9,12 +9,12 @@ import {
 import { getCurrentIdentity } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
 import { canEditProduct, canManageProducts } from "./product-access";
-import {
-  getPublicSellerOfferCondition,
-  PUBLIC_SELLER_CONTACT_CONDITION,
-} from "@/features/sellers/seller-contact";
 import { updateManualProductPrice } from "./product-price-audit";
 import { hasManualPriceReferenceConsent } from "./price-reference";
+import {
+  createProducerProduct,
+  setProducerProductPublication,
+} from "./product-creation";
 import {
   parseProductPrice,
   parseProductQuantity,
@@ -31,6 +31,8 @@ export type ProductFormState = {
   fieldErrors?: ProductFieldErrors;
   values?: Partial<Record<ProductField, string>>;
   createdProductId?: string;
+  createdProductPublished?: boolean;
+  sellerProfileRequired?: boolean;
 };
 
 function productData(data: {
@@ -101,20 +103,40 @@ export async function createProduct(
     };
   }
 
-  const product = await prisma.product.create({
-    data: {
-      ownerId: identity.userId,
-      ...productData(result.data),
-    },
-    select: { id: true },
-  });
+  const intent = formData.get("intent");
+  const publish = intent === "sell";
+  const creation = await createProducerProduct(identity, result.data, publish, prisma);
+  if (!creation.ok) {
+    if (creation.code === "seller-profile-incomplete") {
+      return {
+        message:
+          "Completa tu perfil de vendedor con celular, correo y barrio aproximado, y acepta mostrarlos antes de publicar ofertas.",
+        sellerProfileRequired: true,
+        values: submittedValues(formData),
+      };
+    }
+    if (creation.code === "unavailable") {
+      return {
+        message: "Para vender ahora necesitas una cantidad disponible mayor que cero. También puedes guardar el producto en tu inventario.",
+        fieldErrors: {
+          availableQuantity: "Agrega una cantidad mayor que cero para publicar esta oferta.",
+        },
+        values: submittedValues(formData),
+      };
+    }
+    return { message: "Agrega el perfil de productor para gestionar productos." };
+  }
 
   revalidatePath("/mi-cuenta");
   revalidatePath("/mi-cuenta/productos");
+  if (creation.published) revalidatePublicProduct(creation.productId);
   return {
     ok: true,
-    message: "Guardamos el producto en tu cuenta.",
-    createdProductId: product.id,
+    message: creation.published
+      ? "Publicamos tu oferta y guardamos la cantidad en tu inventario."
+      : "Guardamos el producto en tu inventario privado; aún no es una oferta pública.",
+    createdProductId: creation.productId,
+    createdProductPublished: creation.published,
   };
 }
 
@@ -436,35 +458,21 @@ export async function setProductPublication(
   }
 
   const isPublished = publishedValue === "true";
-  if (isPublished) {
-    const sellerProfile = await prisma.sellerProfile.findFirst({
-      where: {
-        ownerId: identity.userId,
-        ...PUBLIC_SELLER_CONTACT_CONDITION,
-      },
-      select: { id: true },
-    });
-    if (!sellerProfile) {
+  const publication = await setProducerProductPublication(
+    identity,
+    productId,
+    isPublished,
+    prisma,
+  );
+
+  if (!publication.ok) {
+    if (publication.code === "seller-profile-incomplete") {
       return {
-        message: "Completa tu perfil con celular, correo y barrio aproximado, y acepta mostrarlos antes de publicar ofertas.",
+        message:
+          "Completa tu perfil con celular, correo y barrio aproximado, y acepta mostrarlos antes de publicar ofertas.",
+        sellerProfileRequired: true,
       };
     }
-  }
-  const updated = await prisma.product.updateMany({
-    where: {
-      id: productId,
-      ownerId: identity.userId,
-      ...(isPublished
-        ? {
-            availableQuantity: { gt: 0 },
-            ...getPublicSellerOfferCondition(),
-          }
-        : {}),
-    },
-    data: { isPublished },
-  });
-
-  if (updated.count !== 1) {
     return {
       message:
         "No pudimos actualizar el producto. Verifica que sea tuyo y que tenga cantidad disponible para publicarlo.",

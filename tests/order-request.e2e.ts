@@ -757,6 +757,31 @@ async function main(): Promise<void> {
       await producerPage.getByRole("button", { name: "Guardar perfil" }).click();
       await expect(producerPage.getByText("Tu perfil está publicado.")).toBeVisible();
       await producerPage.goto(`${baseURL}/mi-cuenta/productos`);
+      await producerPage.setViewportSize({ width: 1024, height: 768 });
+      const inventoryAction = await producerPage
+        .getByRole("button", { name: "Guardar en inventario" })
+        .boundingBox();
+      const sellAction = await producerPage
+        .getByRole("button", { name: "Vender producto" })
+        .boundingBox();
+      assert.ok(inventoryAction && sellAction);
+      assert.ok(sellAction.x + sellAction.width <= 1024);
+      await producerPage.setViewportSize({ width: 320, height: 640 });
+      assert.equal(
+        await producerPage.locator("html").evaluate(
+          (root) => root.scrollWidth <= root.clientWidth,
+        ),
+        true,
+        "The direct-sale form should fit a 320px viewport without horizontal scrolling.",
+      );
+      const mobileInventoryAction = await producerPage
+        .getByRole("button", { name: "Guardar en inventario" })
+        .boundingBox();
+      const mobileSellAction = await producerPage
+        .getByRole("button", { name: "Vender producto" })
+        .boundingBox();
+      assert.ok(mobileInventoryAction && mobileSellAction);
+      assert.ok(mobileSellAction.y >= mobileInventoryAction.y + mobileInventoryAction.height);
       const harvestName = `Papa E2E ${suffix}`;
       const harvestMunicipality = `Municipio para papa ${suffix}`;
       const cropName = producerPage.getByLabel("Nombre del producto");
@@ -771,8 +796,10 @@ async function main(): Promise<void> {
       await cropUnit.selectOption("KG");
       await cropPrice.fill("2.00");
       await cropMunicipality.fill(harvestMunicipality);
-      const addProduct = producerPage.getByRole("button", { name: "Agregar producto" });
-      await addProduct.click();
+      const saveProduct = producerPage.getByRole("button", {
+        name: "Guardar en inventario",
+      });
+      await saveProduct.click();
       await expect(cropPrice).toHaveAttribute("aria-invalid", "true");
       await expect(cropName).toHaveValue(harvestName);
       await expect(cropCategory).toHaveValue("TUBERS");
@@ -780,14 +807,16 @@ async function main(): Promise<void> {
       await expect(cropUnit).toHaveValue("KG");
       await expect(cropMunicipality).toHaveValue(harvestMunicipality);
       await cropPrice.fill("$2.000");
-      await addProduct.click();
+      await saveProduct.click();
       const savedCrop = producerPage.getByRole("listitem").filter({ hasText: harvestName });
       const publicationShortcut = producerPage.getByRole("link", {
-        name: "Ir al producto guardado para publicarlo",
+        name: "Ir al producto guardado en inventario",
       });
       await expect(publicationShortcut).toBeVisible();
       await publicationShortcut.click();
-      await expect(savedCrop.getByText("Privado", { exact: true })).toBeVisible();
+      await expect(
+        savedCrop.getByText("Inventario privado; no es una oferta pública", { exact: true }),
+      ).toBeVisible();
       const publicCatalog = await browser.newPage();
       const harvestCatalogUrl = `${baseURL}/catalogo?${new URLSearchParams({
         municipio: harvestMunicipality,
@@ -796,12 +825,73 @@ async function main(): Promise<void> {
       await expect(publicCatalog.getByText("No encontramos productos con estos filtros."))
         .toBeVisible();
       await savedCrop.getByRole("button", { name: "Publicar en catálogo" }).click();
-      await expect(savedCrop.getByText("Publicado", { exact: true })).toBeVisible();
+      await expect(
+        savedCrop.getByText("Oferta pública en el catálogo", { exact: true }),
+      ).toBeVisible();
       await publicCatalog.reload();
       const publicCrop = publicCatalog.getByRole("listitem").filter({ hasText: harvestName });
       await expect(publicCrop).toContainText("12,5 Kilogramo (kg)");
       await expect(publicCrop).toContainText(/2\.000/);
       await expect(publicCrop.locator("time")).toHaveAttribute("datetime", /Z$/);
+
+      const directSaleName = `Venta directa E2E ${suffix}`;
+      const directSaleMunicipality = `Municipio venta directa ${suffix}`;
+      await cropName.fill(directSaleName);
+      await cropCategory.selectOption("TUBERS");
+      await cropQuantity.fill("6");
+      await cropUnit.selectOption("KG");
+      await cropPrice.fill("$3.500");
+      await cropMunicipality.fill(directSaleMunicipality);
+      await producerPage.getByRole("button", { name: "Vender producto" }).click();
+      const directSale = producerPage.getByRole("listitem").filter({
+        hasText: directSaleName,
+      });
+      await expect(
+        directSale.getByText("Oferta pública en el catálogo", { exact: true }),
+      ).toBeVisible();
+      const directSaleRecord = await database.product.findFirstOrThrow({
+        where: { ownerId: producer.id, name: directSaleName },
+      });
+      assert.equal(directSaleRecord.isPublished, true);
+      assert.equal(directSaleRecord.priceCOP, 3500);
+      assert.ok(directSaleRecord.availableQuantity.equals("6"));
+      assert.equal(
+        await database.product.count({
+          where: { ownerId: producer.id, name: directSaleName },
+        }),
+        1,
+      );
+
+      const negotiableSaleName = `Oferta negociable E2E ${suffix}`;
+      await cropName.fill(negotiableSaleName);
+      await cropCategory.selectOption("TUBERS");
+      await cropQuantity.fill("3");
+      await cropUnit.selectOption("KG");
+      await producerPage.locator('input[name="pricingType"][value="NEGOTIABLE"]').check();
+      await cropMunicipality.fill(directSaleMunicipality);
+      await producerPage.getByRole("button", { name: "Vender producto" }).click();
+      const negotiableSale = await database.product.findFirstOrThrow({
+        where: { ownerId: producer.id, name: negotiableSaleName },
+      });
+      assert.equal(negotiableSale.isPublished, true);
+      assert.equal(negotiableSale.pricingType, "NEGOTIABLE");
+      assert.equal(negotiableSale.priceCOP, null);
+      assert.ok(negotiableSale.availableQuantity.equals("3"));
+      assert.equal(
+        await database.product.count({
+          where: { ownerId: producer.id, name: negotiableSaleName },
+        }),
+        1,
+      );
+      await publicCatalog.goto(`${baseURL}/catalogo?${new URLSearchParams({
+        municipio: directSaleMunicipality,
+      })}`);
+      await expect(
+        publicCatalog.getByRole("listitem").filter({ hasText: directSaleName }),
+      ).toContainText(/3\.500/);
+      await expect(
+        publicCatalog.getByRole("listitem").filter({ hasText: negotiableSaleName }),
+      ).toContainText("Precio a convenir");
       await publicCrop.getByRole("link", { name: harvestName, exact: true }).click();
       await publicCatalog.getByRole("link", { name: "Ver perfil de Distribución de prueba" }).click();
       await expect(publicCatalog.getByRole("heading", { name: "Distribución de prueba" })).toBeVisible();
@@ -863,7 +953,9 @@ async function main(): Promise<void> {
       await expect(publicCrop).toContainText("8,75 Kilogramo (kg)");
       await expect(publicCrop.locator("time")).toHaveAttribute("datetime", originalPriceDate!);
       await savedCrop.getByRole("button", { name: "Retirar del catálogo" }).click();
-      await expect(savedCrop.getByText("Privado", { exact: true })).toBeVisible();
+      await expect(
+        savedCrop.getByText("Inventario privado; no es una oferta pública", { exact: true }),
+      ).toBeVisible();
       await publicCatalog.reload();
       await expect(publicCrop).toHaveCount(0);
       await publicCatalog.close();
@@ -1701,7 +1793,8 @@ async function main(): Promise<void> {
       await page.getByRole("button", { name: "Vender productos" }).click();
       await expect(page).toHaveURL(`${baseURL}/mi-cuenta/productos`);
       await page.goto(`${baseURL}/mi-cuenta`);
-      await expect(page.getByRole("link", { name: "Gestionar mis productos" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Vender producto" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Gestionar inventario" })).toBeVisible();
       await expect(page.getByRole("link", { name: "Comprar", exact: true })).toBeVisible();
       await producerContext.close();
       await context.close();
