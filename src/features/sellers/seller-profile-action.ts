@@ -5,6 +5,7 @@ import { getCurrentIdentity } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
 import {
   getSellerProfileHref,
+  getSellerContactVisibility,
   isSellerProfileAvailable,
   normalizeSellerEmail,
   normalizeSellerPhone,
@@ -40,18 +41,14 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
       (typeof rawEmail === "string" && rawEmail.trim() && !email)) {
     return { message: "Revisa el WhatsApp, el teléfono y el correo." };
   }
-  const whatsappPublic = Boolean(whatsapp && form.get("whatsappPublic") === "on");
-  const phonePublic = Boolean(phone && form.get("phonePublic") === "on");
-  const emailPublic = Boolean(email && form.get("emailPublic") === "on");
+  const visibility = getSellerContactVisibility(form, { whatsapp, phone, email });
   const data = {
     ...values,
     published: form.get("published") === "on",
     whatsapp,
-    whatsappPublic,
+    ...visibility,
     phone,
-    phonePublic,
     email,
-    emailPublic,
   };
   const profile = await prisma.sellerProfile.upsert({
     where: { ownerId: identity.userId },
