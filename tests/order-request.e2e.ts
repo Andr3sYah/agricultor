@@ -898,6 +898,7 @@ async function main(): Promise<void> {
       await expect(
         publicCatalog.getByRole("listitem").filter({ hasText: negotiableSaleName }),
       ).toContainText("Consultar precio");
+      await publicCatalog.goto(harvestCatalogUrl);
       await publicCrop.getByRole("link", { name: harvestName, exact: true }).click();
       await publicCatalog.getByRole("link", { name: "Ver perfil de Distribución de prueba" }).click();
       await expect(publicCatalog.getByRole("heading", { name: "Distribución de prueba" })).toBeVisible();
