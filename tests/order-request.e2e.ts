@@ -1670,11 +1670,9 @@ async function main(): Promise<void> {
         hasText: "Todo el stock está reservado en pedidos pendientes.",
       })).toBeVisible();
       await page.goto(`${baseURL}/catalogo/${product.id}/pedido`);
-      await expect(
-        page.getByText(
-          "Todo el stock está reservado en pedidos pendientes. No puedes enviar una nueva solicitud hasta que haya disponibilidad libre.",
-        ),
-      ).toBeVisible();
+      await expect(page.getByRole("status")).toHaveText(
+        "No hay disponibilidad para nuevas solicitudes en este momento. Vuelve a consultar más tarde.",
+      );
 
       await producerPage.goto(`${baseURL}/mi-cuenta/perfil-vendedor`);
       await producerPage.getByRole("checkbox", { name: "Mostrar mi perfil en el catálogo" }).uncheck();
