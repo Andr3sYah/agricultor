@@ -897,7 +897,7 @@ async function main(): Promise<void> {
       ).toContainText(/3\.500/);
       await expect(
         publicCatalog.getByRole("listitem").filter({ hasText: negotiableSaleName }),
-      ).toContainText("Precio a convenir");
+      ).toContainText("Consultar precio");
       await publicCrop.getByRole("link", { name: harvestName, exact: true }).click();
       await publicCatalog.getByRole("link", { name: "Ver perfil de Distribución de prueba" }).click();
       await expect(publicCatalog.getByRole("heading", { name: "Distribución de prueba" })).toBeVisible();
