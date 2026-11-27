@@ -601,6 +601,38 @@ async function main(): Promise<void> {
       const signupTarget = new URL(await createBuyerLink.getAttribute("href") ?? "", baseURL);
       assert.equal(signupTarget.pathname, "/crear-cuenta");
       assert.equal(signupTarget.searchParams.get("redirectTo"), orderContextUrl.slice(baseURL.length));
+      const requestSignInLink = anonymousPage.getByRole("link", { name: "Inicia sesión" });
+      await expect(requestSignInLink).toBeVisible();
+      const signInTarget = new URL(await requestSignInLink.getAttribute("href") ?? "", baseURL);
+      assert.equal(signInTarget.pathname, "/iniciar-sesion");
+      assert.equal(signInTarget.searchParams.get("redirectTo"), orderContextUrl.slice(baseURL.length));
+
+      await database.product.update({
+        where: { id: product.id },
+        data: {
+          availableQuantity: new Prisma.Decimal("0"),
+          reservedQuantity: new Prisma.Decimal("5"),
+        },
+      });
+      await anonymousPage.goto(orderContextUrl);
+      await expect(anonymousPage.getByRole("heading", { name: product.name })).toBeVisible();
+      await expect(anonymousPage.getByText("0 Kilogramo", { exact: true })).toBeVisible();
+      await expect(anonymousPage.getByRole("status")).toContainText(
+        "No hay disponibilidad para nuevas solicitudes en este momento.",
+      );
+      await expect(
+        anonymousPage.getByRole("link", { name: "Crear cuenta de comprador" }),
+      ).toHaveCount(0);
+      await expect(
+        anonymousPage.getByRole("link", { name: "Inicia sesión" }),
+      ).toHaveCount(0);
+      await database.product.update({
+        where: { id: product.id },
+        data: {
+          availableQuantity: new Prisma.Decimal("5"),
+          reservedQuantity: new Prisma.Decimal("0"),
+        },
+      });
       await anonymousPage.getByRole("link", { name: "Volver al catálogo" }).click();
       await anonymousPage.waitForURL(catalogUrl);
       const sortedCatalogQuery = new URLSearchParams(catalogQuery);
