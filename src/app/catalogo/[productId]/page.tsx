@@ -204,13 +204,19 @@ export default async function PublicProductPage({
           ).toString()}
           productName={product.name}
         />
-        <Link
-          aria-label={`Solicitar este producto: ${product.name}`}
-          className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-emerald-800 px-4 py-2 text-center font-semibold text-white underline-offset-4 hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-900 sm:w-auto"
-          href={getPublicProductOrderHref(product.id, filters)}
-        >
-          Solicitar este producto
-        </Link>
+        {Number(product.availableQuantity) > 0 ? (
+          <Link
+            aria-label={`Solicitar este producto: ${product.name}`}
+            className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-emerald-800 px-4 py-2 text-center font-semibold text-white underline-offset-4 hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-900 sm:w-auto"
+            href={getPublicProductOrderHref(product.id, filters)}
+          >
+            Solicitar este producto
+          </Link>
+        ) : (
+          <p className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950" role="status">
+            Todo el stock está reservado en pedidos pendientes. No puedes enviar una nueva solicitud hasta que haya disponibilidad libre.
+          </p>
+        )}
         {buyerId && (
           <div className="mt-5 border-t border-slate-200 pt-1">
             <FavoriteControl isFavorite={Boolean(favorite)} productId={product.id} />
