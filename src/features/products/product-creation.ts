@@ -80,6 +80,14 @@ export async function setProducerProductPublication(
 
   return database.$transaction(
     async (transaction) => {
+      const currentProduct = await transaction.product.findFirst({
+        where: { id: productId, ownerId: actor.userId },
+        select: { id: true, availableQuantity: true },
+      });
+      if (!currentProduct || (publish && currentProduct.availableQuantity.lte(0))) {
+        return { ok: false, code: "unavailable" } as const;
+      }
+
       if (publish) {
         const sellerProfile = await transaction.sellerProfile.findFirst({
           where: {

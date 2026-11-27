@@ -191,7 +191,7 @@ describe(
 
     it("allows zero-stock private inventory while rejecting unauthorized direct sales", async () => {
       const privateProduct = await createProducerProduct(
-        completeProducer,
+        incompleteProducer,
         productInput({ availableQuantity: "0" }),
         false,
         database,
@@ -205,7 +205,7 @@ describe(
         assert.ok(saved.availableQuantity.equals(0));
         assert.deepEqual(
           await setProducerProductPublication(
-            completeProducer,
+            incompleteProducer,
             privateProduct.productId,
             true,
             database,
