@@ -12,6 +12,18 @@ export function parseWompiPaymentLink(value: FormDataEntryValue | null) {
   return /^https:\/\/checkout\.wompi\.co\/l\/[A-Za-z0-9_-]{1,200}$/.test(link) ? link : null;
 }
 
+export function canUseWompiForProduct(
+  product: { pricingType: string; priceCOP: number | null } | null,
+): boolean {
+  return Boolean(
+    product &&
+      product.pricingType === "FIXED" &&
+      product.priceCOP !== null &&
+      Number.isSafeInteger(product.priceCOP) &&
+      product.priceCOP > 0,
+  );
+}
+
 export function parsePaymentReference(value: FormDataEntryValue | null) {
   if (typeof value !== "string") return null;
   const reference = value.trim();

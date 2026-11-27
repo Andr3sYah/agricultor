@@ -53,6 +53,7 @@ export default async function RequestOrderPage({
       availableQuantity: true,
       unit: true,
       priceCOP: true,
+      pricingType: true,
       municipality: true,
       owner: {
         select: {
@@ -63,6 +64,9 @@ export default async function RequestOrderPage({
               exactLocation: true,
               exactLocationPublic: true,
               exactLocationConsentAt: true,
+              whatsapp: true,
+              whatsappLink: true,
+              whatsappPublic: true,
               phone: true,
               phonePublic: true,
               email: true,
@@ -113,7 +117,9 @@ export default async function RequestOrderPage({
       </Link>
       <section className="mt-4 rounded-3xl border border-emerald-950/10 bg-white p-5 shadow-sm sm:mt-6 sm:p-12">
         <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-800">
-          Solicitud de compra
+          {product.pricingType === "NEGOTIABLE"
+            ? "Precio a convenir"
+            : "Solicitud de compra"}
         </p>
         <h1 className="mt-4 text-3xl font-semibold wrap-anywhere">
           {product.name}
@@ -129,19 +135,41 @@ export default async function RequestOrderPage({
           </div>
           <div>
             <dt className="font-medium">Precio por unidad</dt>
-            <dd>{copFormatter.format(product.priceCOP)}</dd>
-            <p className="mt-1 text-sm text-slate-600">
-              Valor publicado por el productor. El pedido es una solicitud y el
-              productor confirma el precio antes de aceptarlo.
-            </p>
+            <dd>
+              {product.pricingType === "FIXED" && product.priceCOP !== null
+                ? copFormatter.format(product.priceCOP)
+                : "Precio a convenir"}
+            </dd>
+            {product.pricingType === "FIXED" && (
+              <p className="mt-1 text-sm text-slate-600">
+                Valor publicado por el productor. El pedido es una solicitud y el
+                productor confirma el precio antes de aceptarlo.
+              </p>
+            )}
           </div>
           <div>
             <dt className="font-medium">Municipio</dt>
             <dd className="wrap-anywhere">{product.municipality}</dd>
           </div>
         </dl>
-        {sellerProfile && <SellerPublicContact profile={sellerProfile} />}
-        {!hasAvailableStock ? (
+        {sellerProfile && (
+          <SellerPublicContact
+            negotiating={product.pricingType === "NEGOTIABLE"}
+            profile={sellerProfile}
+          />
+        )}
+        {product.pricingType === "NEGOTIABLE" ? (
+          <p className="mt-6 rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-950">
+            Esta oferta se acuerda directamente con el vendedor. La negociación y
+            compra continúan fuera de Agricultor; no se crea una solicitud de
+            pedido ni se procesa un pago aquí.
+          </p>
+        ) : product.priceCOP === null || product.priceCOP < 1 ? (
+          <p className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950">
+            El precio de esta oferta no está disponible para solicitudes. Contacta
+            al vendedor para confirmar los datos publicados.
+          </p>
+        ) : !hasAvailableStock ? (
           <p
             className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950"
             role="status"

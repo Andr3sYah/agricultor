@@ -61,6 +61,10 @@ export default async function ProductsPage() {
           solicitudes recibidas aparecerán en el seguimiento de pedidos.
         </p>
         <p className="mt-2 text-sm text-slate-700">
+          Si eliges «Precio a convenir», los compradores se comunicarán contigo y
+          acordarán la compra fuera de Agricultor.
+        </p>
+        <p className="mt-2 text-sm text-slate-700">
           «Disponible» o «Agotado» indica si tienes existencias. «Publicado» o
           «Privado» indica si las personas pueden ver tu oferta en el catálogo.
         </p>
@@ -137,25 +141,33 @@ export default async function ProductsPage() {
                     )}
                     <div>
                       <dt className="font-medium">Precio por unidad</dt>
-                      <dd>{copFormatter.format(product.priceCOP)}</dd>
+                      <dd>
+                        {product.pricingType === "FIXED" && product.priceCOP !== null
+                          ? copFormatter.format(product.priceCOP)
+                          : "Precio a convenir"}
+                      </dd>
                     </div>
                     <div>
                       <dt className="font-medium">Municipio o localidad</dt>
                       <dd>{product.municipality}</dd>
                     </div>
                   </dl>
-                  <QuickProductFieldForm
-                    field="priceCOP"
-                    label={`Precio en pesos por ${unit}`}
-                    productId={product.id}
-                    saveAction={updateProductPrice.bind(null, product.id, product.unit, product.priceCOP)}
-                    value={String(product.priceCOP)}
-                  />
-                  <PriceReferenceOptIn
-                    action={setProductPriceReferenceOptIn}
-                    enabled={product.priceReferenceEnabled}
-                    productId={product.id}
-                  />
+                  {product.pricingType === "FIXED" && product.priceCOP !== null && (
+                    <>
+                      <QuickProductFieldForm
+                        field="priceCOP"
+                        label={`Precio en pesos por ${unit}`}
+                        productId={product.id}
+                        saveAction={updateProductPrice.bind(null, product.id, product.unit, product.priceCOP)}
+                        value={String(product.priceCOP)}
+                      />
+                      <PriceReferenceOptIn
+                        action={setProductPriceReferenceOptIn}
+                        enabled={product.priceReferenceEnabled}
+                        productId={product.id}
+                      />
+                    </>
+                  )}
                   <QuickProductFieldForm
                     field="availableQuantity"
                     hint="Escribe cuánto puedes vender en pedidos nuevos. Si ya agotaste el producto, escribe 0."

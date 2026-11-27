@@ -66,6 +66,7 @@ const getPublicProduct = cache(async (productId: string) => {
       reservedQuantity: true,
       unit: true,
       priceCOP: true,
+      pricingType: true,
       municipality: true,
     },
   });
@@ -120,7 +121,12 @@ export default async function PublicProductPage({
     notFound();
   }
 
-  const priceDates = await getProductPriceDates([product]);
+  const priceDates =
+    product.pricingType === "FIXED" && product.priceCOP !== null
+      ? await getProductPriceDates([
+          { id: product.id, priceCOP: product.priceCOP, unit: product.unit },
+        ])
+      : new Map<string, Date>();
   const seller = await isSellerProfileAvailable() ? await prisma.sellerProfile.findFirst({
     where: {
       ownerId: product.ownerId,
@@ -140,6 +146,9 @@ export default async function PublicProductPage({
       exactLocation: true,
       exactLocationPublic: true,
       exactLocationConsentAt: true,
+      whatsapp: true,
+      whatsappLink: true,
+      whatsappPublic: true,
       phone: true,
       phonePublic: true,
       email: true,
@@ -185,7 +194,12 @@ export default async function PublicProductPage({
             Ver perfil de {seller.name}
           </Link>
         )}
-        {seller && <SellerPublicContact profile={seller} />}
+        {seller && (
+          <SellerPublicContact
+            negotiating={product.pricingType === "NEGOTIABLE"}
+            profile={seller}
+          />
+        )}
         <dl className="mt-6 grid gap-4 text-slate-700 sm:grid-cols-2">
           <div>
             <dt className="font-medium">Categoría</dt>
@@ -200,19 +214,30 @@ export default async function PublicProductPage({
           </div>
           <div>
             <dt className="font-medium">Precio por unidad</dt>
-            <dd>{copFormatter.format(product.priceCOP)}</dd>
-            <ProductPriceDate date={priceDates.get(product.id)} />
-            <p className="mt-1 text-sm text-slate-600">
-              Precio publicado por el productor; las solicitudes requieren su
-              confirmación. No es una cotización oficial ni una garantía de
-              precio.
-            </p>
+            <dd>
+              {product.pricingType === "FIXED" && product.priceCOP !== null
+                ? copFormatter.format(product.priceCOP)
+                : "Precio a convenir"}
+            </dd>
+            {product.pricingType === "FIXED" && (
+              <>
+                <ProductPriceDate date={priceDates.get(product.id)} />
+                <p className="mt-1 text-sm text-slate-600">
+                  Precio publicado por el productor; las solicitudes requieren su
+                  confirmación. No es una cotización oficial ni una garantía de
+                  precio.
+                </p>
+              </>
+            )}
           </div>
           <div>
             <dt className="font-medium">Municipio</dt>
             <dd>{product.municipality}</dd>
           </div>
-          {searchedQuantity && hasEnoughStock && (
+          {searchedQuantity &&
+            hasEnoughStock &&
+            product.pricingType === "FIXED" &&
+            product.priceCOP !== null && (
             <ProductQuantityEstimate quantity={searchedQuantity} unit={unit} priceCOP={product.priceCOP} />
           )}
         </dl>
@@ -234,7 +259,13 @@ export default async function PublicProductPage({
           ).toString()}
           productName={product.name}
         />
-        {Number(product.availableQuantity) > 0 ? (
+        {product.pricingType === "NEGOTIABLE" ? (
+          <p className="mt-6 rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-950">
+            Comunícate con el vendedor usando los contactos públicos para consultar
+            el precio. La negociación y compra continúan fuera de Agricultor; aquí
+            no se envían solicitudes ni se procesan pagos.
+          </p>
+        ) : Number(product.availableQuantity) > 0 ? (
           <Link
             aria-label={`Solicitar este producto: ${product.name}`}
             className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-emerald-800 px-4 py-2 text-center font-semibold text-white underline-offset-4 hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-900 sm:w-auto"

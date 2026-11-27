@@ -1,7 +1,13 @@
 import type { SellerPublicContactProfile } from "./seller-contact";
 import { getSellerPublicContact } from "./seller-contact";
 
-export function SellerPublicContact({ profile }: { profile: SellerPublicContactProfile }) {
+export function SellerPublicContact({
+  profile,
+  negotiating = false,
+}: {
+  profile: SellerPublicContactProfile;
+  negotiating?: boolean;
+}) {
   const contact = getSellerPublicContact(profile);
   if (!contact) return null;
 
@@ -13,10 +19,28 @@ export function SellerPublicContact({ profile }: { profile: SellerPublicContactP
           ? <>Ubicación exacta: {contact.exactLocation}, {contact.municipality}</>
           : <>Ubicación aproximada: {contact.neighborhood}, {contact.municipality}</>}
       </p>
-      <a className="mt-2 block min-h-11 break-all font-semibold text-primary underline underline-offset-2" href={`tel:+${contact.phone}`}>
+      {negotiating && (
+        <p className="mt-2 text-sm text-foreground/75">
+          Contacta al vendedor por uno de los medios disponibles para consultar y
+          acordar el precio. La negociación y compra continúan fuera de Agricultor;
+          aquí no se crea una solicitud ni se procesa un pago.
+        </p>
+      )}
+      {contact.whatsappUrl && (
+        <a
+          aria-label="Contactar al vendedor por WhatsApp"
+          className="mt-2 inline-flex min-h-11 items-center rounded-lg bg-primary px-4 font-semibold text-white underline-offset-2 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          href={contact.whatsappUrl}
+          rel="noreferrer"
+          target="_blank"
+        >
+          Escribir por WhatsApp
+        </a>
+      )}
+      <a aria-label="Llamar al vendedor" className="mt-2 block min-h-11 break-all font-semibold text-primary underline underline-offset-2" href={`tel:+${contact.phone}`}>
         Celular: +57 {contact.phone.slice(2)}
       </a>
-      <a className="block min-h-11 break-all font-semibold text-primary underline underline-offset-2" href={`mailto:${contact.email}`}>
+      <a aria-label="Enviar correo al vendedor" className="block min-h-11 break-all font-semibold text-primary underline underline-offset-2" href={`mailto:${contact.email}`}>
         Correo: {contact.email}
       </a>
     </section>

@@ -25,6 +25,7 @@ export type OrderMutationResult =
         | "unauthorized"
         | "invalid"
         | "unavailable"
+        | "price-unavailable"
         | "offer-changed"
         | "idempotency-conflict"
         | "not-found"
@@ -70,6 +71,33 @@ export async function requestOrder(
       ) IS NULL AS "locked"
     `;
 
+    const product = await transaction.product.findUnique({
+      where: { id: validation.data.productId },
+      select: {
+        id: true,
+        ownerId: true,
+        isPublished: true,
+        unit: true,
+        priceCOP: true,
+        pricingType: true,
+      },
+    });
+
+    if (
+      !product ||
+      !product.isPublished ||
+      !canRequestOrder(actor, product.ownerId)
+    ) {
+      return { ok: false, code: "unavailable" };
+    }
+    if (
+      product.pricingType !== "FIXED" ||
+      product.priceCOP === null ||
+      product.priceCOP < 1
+    ) {
+      return { ok: false, code: "price-unavailable" };
+    }
+
     const existingOrder = await transaction.order.findFirst({
       where: { buyerId: actor.userId, idempotencyKey },
       select: {
@@ -91,24 +119,6 @@ export async function requestOrder(
       return { ok: true, orderId: existingOrder.id };
     }
 
-    const product = await transaction.product.findUnique({
-      where: { id: validation.data.productId },
-      select: {
-        id: true,
-        ownerId: true,
-        isPublished: true,
-        unit: true,
-        priceCOP: true,
-      },
-    });
-
-    if (
-      !product ||
-      !product.isPublished ||
-      !canRequestOrder(actor, product.ownerId)
-    ) {
-      return { ok: false, code: "unavailable" };
-    }
     if (input.expectedUnit !== product.unit || input.expectedPriceCOP !== String(product.priceCOP)) {
       return { ok: false, code: "offer-changed" };
     }
@@ -119,7 +129,8 @@ export async function requestOrder(
         ownerId: product.ownerId,
         isPublished: true,
         unit: product.unit,
-        priceCOP: product.priceCOP,
+        priceCOP: { equals: product.priceCOP, gte: 1 },
+        pricingType: "FIXED",
         availableQuantity: { gte: quantity },
       },
       data: {
@@ -131,8 +142,15 @@ export async function requestOrder(
     if (reserved.count !== 1) {
       const current = await transaction.product.findFirst({
         where: { id: product.id, isPublished: true },
-        select: { unit: true, priceCOP: true },
+        select: { unit: true, priceCOP: true, pricingType: true },
       });
+      if (
+        current?.pricingType !== "FIXED" ||
+        current.priceCOP === null ||
+        current.priceCOP < 1
+      ) {
+        return { ok: false, code: "price-unavailable" };
+      }
       if (current && (current.unit !== product.unit || current.priceCOP !== product.priceCOP)) {
         return { ok: false, code: "offer-changed" };
       }
@@ -148,7 +166,7 @@ export async function requestOrder(
       },
     });
 
-    if (!snapshot) {
+    if (!snapshot || snapshot.priceCOP === null || snapshot.priceCOP < 1) {
       throw new Error("The product disappeared while reserving its inventory.");
     }
 

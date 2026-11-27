@@ -24,6 +24,8 @@ function messageFor(code: string): string {
       return "Revisa los datos del pedido.";
     case "unavailable":
       return "No pudimos reservar esa cantidad. Prueba con una cantidad menor o vuelve al catálogo si la oferta fue retirada.";
+    case "price-unavailable":
+      return "Esta oferta tiene precio a convenir. Comunícate con el vendedor para negociar y continuar la compra fuera de Agricultor.";
     case "offer-changed":
       return "La oferta cambió. Revisa el precio y la unidad antes de enviar la solicitud otra vez.";
     case "idempotency-conflict":

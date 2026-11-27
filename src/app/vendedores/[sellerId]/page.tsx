@@ -29,6 +29,7 @@ export default async function PublicSellerProfile({ params }: { params: Promise<
       exactLocationConsentAt: true,
       ownerId: true,
       whatsapp: true,
+      whatsappLink: true,
       whatsappPublic: true,
       phone: true,
       phonePublic: true,
@@ -71,11 +72,6 @@ export default async function PublicSellerProfile({ params }: { params: Promise<
         <p className="font-medium wrap-anywhere">{profile.municipality}</p>
         <p className="whitespace-pre-wrap wrap-anywhere">{profile.description}</p>
         <SellerPublicContact profile={profile} />
-        {profile.whatsappPublic && profile.whatsapp && (
-          <a className="inline-flex min-h-11 items-center font-semibold text-emerald-900 underline" href={`https://wa.me/${profile.whatsapp}`}>
-            WhatsApp
-          </a>
-        )}
         {ratings && (
           <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-950">
             {ratings._avg.rating === null ? "Todavía no hay calificaciones de pedidos recibidos." : (

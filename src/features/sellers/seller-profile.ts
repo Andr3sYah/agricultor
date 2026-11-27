@@ -10,6 +10,8 @@ export {
   normalizeSellerExactLocation,
   normalizeSellerNeighborhood,
   normalizeSellerPhone,
+  normalizeSellerWhatsappChoice,
+  normalizeSellerWhatsappLink,
   PUBLIC_SELLER_CONTACT_CONDITION,
 } from "./seller-contact";
 export type { SellerPublicContactProfile } from "./seller-contact";

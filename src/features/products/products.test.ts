@@ -11,6 +11,7 @@ const validInput = {
   category: "FRUITS",
   availableQuantity: "12,5",
   unit: "KG",
+  pricingType: "FIXED",
   priceCOP: "2500",
   municipality: "Pueblo",
 };
@@ -97,6 +98,47 @@ describe("product management policies and validation", () => {
       const result = validateProductInput({ ...validInput, priceCOP });
       assert.ok(!result.ok);
       assert.ok(result.errors.priceCOP);
+    }
+  });
+
+  it("accepts an explicit price-to-be-agreed offer without a numeric price", () => {
+    const result = validateProductInput({
+      ...validInput,
+      pricingType: "NEGOTIABLE",
+      priceCOP: "",
+    });
+
+    assert.deepEqual(result, {
+      ok: true,
+      data: {
+        name: "Producto",
+        category: "FRUITS",
+        availableQuantity: "12.5",
+        unit: "KG",
+        pricingType: "NEGOTIABLE",
+        priceCOP: null,
+        municipality: "Pueblo",
+      },
+    });
+  });
+
+  it("requires an explicit pricing type and a valid price for fixed-price offers", () => {
+    const missingPricingType = validateProductInput({
+      ...validInput,
+      pricingType: undefined,
+    });
+    assert.equal(missingPricingType.ok, false);
+    if (!missingPricingType.ok) {
+      assert.ok(missingPricingType.errors.pricingType);
+    }
+
+    const missingFixedPrice = validateProductInput({
+      ...validInput,
+      priceCOP: "",
+    });
+    assert.equal(missingFixedPrice.ok, false);
+    if (!missingFixedPrice.ok) {
+      assert.ok(missingFixedPrice.errors.priceCOP);
     }
   });
 
