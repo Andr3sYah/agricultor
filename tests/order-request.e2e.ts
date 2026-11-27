@@ -616,7 +616,7 @@ async function main(): Promise<void> {
       });
       await anonymousPage.goto(orderContextUrl);
       await expect(anonymousPage.getByRole("heading", { name: product.name })).toBeVisible();
-      await expect(anonymousPage.getByText("0 Kilogramo", { exact: true })).toBeVisible();
+      await expect(anonymousPage.getByText("0 Kilogramo (kg)", { exact: true })).toBeVisible();
       await expect(anonymousPage.getByRole("status")).toContainText(
         "No hay disponibilidad para nuevas solicitudes en este momento.",
       );
