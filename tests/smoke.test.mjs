@@ -139,6 +139,11 @@ test("production home page offers one shared signup and a single sign-in link", 
   assert.match(html, /href="\/crear-cuenta">Crear cuenta<\/a>/);
   assert.equal([...html.matchAll(/href="\/crear-cuenta"/g)].length, 1);
   assert.match(html, /href="\/catalogo">Explorar el catálogo<\/a>/);
+  const primaryNavigation = html.match(
+    /<nav[^>]*aria-label="Navegación principal"[^>]*>([\s\S]*?)<\/nav>/,
+  );
+  assert.ok(primaryNavigation);
+  assert.doesNotMatch(primaryNavigation[1], /Catálogo|href="\/catalogo"/);
   assert.equal([...html.matchAll(/href="\/iniciar-sesion"/g)].length, 1);
   assert.match(html, /Consulta precios y cantidades sin registrarte/);
   assert.match(html, /href="\/iniciar-sesion">Inicia sesión<\/a>/);
