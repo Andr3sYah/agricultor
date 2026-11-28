@@ -36,7 +36,7 @@ export function SellerPublicContact({
         </a>
       )}
       <a aria-label="Llamar al vendedor" className="mt-2 block min-h-11 break-all font-semibold text-primary underline underline-offset-2" href={`tel:+${contact.phone}`}>
-        Celular: +57 {contact.phone.slice(2)}
+        Teléfono de contacto: +57 {contact.phone.slice(2)}
       </a>
       <a aria-label="Enviar correo al vendedor" className="block min-h-11 break-all font-semibold text-primary underline underline-offset-2" href={`mailto:${contact.email}`}>
         Correo: {contact.email}

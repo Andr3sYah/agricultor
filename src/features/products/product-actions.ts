@@ -122,7 +122,7 @@ export async function createProduct(
     if (creation.code === "seller-profile-incomplete") {
       return {
         message:
-          "Completa tu perfil de vendedor con celular, correo y barrio aproximado, y acepta mostrarlos antes de publicar ofertas.",
+          "Completa tu perfil de vendedor con teléfono de contacto, correo y barrio aproximado, y acepta mostrarlos antes de publicar ofertas.",
         sellerProfileRequired: true,
         values: submittedValues(formData),
       };
@@ -482,7 +482,7 @@ export async function setProductPublication(
     if (publication.code === "seller-profile-incomplete") {
       return {
         message:
-          "Completa tu perfil con celular, correo y barrio aproximado, y acepta mostrarlos antes de publicar ofertas.",
+          "Completa tu perfil con teléfono de contacto, correo y barrio aproximado, y acepta mostrarlos antes de publicar ofertas.",
         sellerProfileRequired: true,
       };
     }

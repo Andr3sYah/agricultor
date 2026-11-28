@@ -1437,13 +1437,15 @@ async function main(): Promise<void> {
       await answeredProducerRequests.getByLabel("Costo de entrega en pesos").fill("750");
       await answeredProducerRequests.getByRole("button", { name: "Guardar datos de entrega" }).click();
       await expect(answeredProducerRequests.getByText("Guardamos los datos de entrega del pedido.")).toBeVisible();
-      const sellerPhone = answeredProducerRequests.getByLabel("WhatsApp del vendedor");
-      await sellerPhone.fill("123");
-      await answeredProducerRequests.getByRole("button", { name: "Compartir WhatsApp" }).click();
-      await expect(answeredProducerRequests.getByRole("alert")).toHaveText("Escribe un celular colombiano de 10 dígitos.");
-      await sellerPhone.fill("+57 300 000 0000");
-      await answeredProducerRequests.getByRole("button", { name: "Compartir WhatsApp" }).click();
-      await expect(answeredProducerRequests.getByRole("status").filter({ hasText: "Compartimos el WhatsApp" })).toBeVisible();
+      const sharePhoneForm = answeredProducerRequests.getByRole("form", { name: "Teléfono de contacto del pedido" });
+      await expect(sharePhoneForm.locator('input[type="tel"], input[name="whatsappLink"]')).toHaveCount(0);
+      await answeredProducerRequests.getByRole("button", { name: "Compartir teléfono" }).click();
+      await expect(answeredProducerRequests.getByRole("status").filter({ hasText: "Compartimos tu teléfono de contacto" })).toBeVisible();
+      const savedContact = await database.orderSellerContact.findUniqueOrThrow({
+        where: { orderId: acceptedOrder.id },
+        select: { phone: true },
+      });
+      assert.equal(savedContact.phone, "573000000000");
       await expect(answeredProducerRequests.getByText(acceptedOrder.id, { exact: true })).toBeVisible();
       assert.ok(summary.includes(`Referencia: ${acceptedOrder.id}\n`));
       const acceptance = acceptedOrder.history.find(
@@ -1537,9 +1539,10 @@ async function main(): Promise<void> {
       await expect(ratedProfile.getByText(/5 de 5.*1 calificación de pedidos recibidos/)).toBeVisible();
       await ratedProfile.close();
       await page.getByText("Coordinar entrega", { exact: true }).click();
-      const whatsapp = page.getByRole("link", { name: "Hablar con el vendedor por WhatsApp" });
+      const whatsapp = page.getByRole("link", { name: "Escribir por WhatsApp" });
       await expect(whatsapp).toHaveAttribute("href", /^https:\/\/wa\.me\/573000000000\?text=/);
       assert.ok((await whatsapp.getAttribute("href"))?.includes(acceptedOrder.id));
+      await expect(page.getByRole("link", { name: "Llamar al vendedor" })).toHaveAttribute("href", "tel:+573000000000");
       await expect(page.getByText(acceptedOrder.id, { exact: true })).toBeVisible();
       await expect(page.getByRole("textbox", { name: "Resumen del pedido" })).toHaveValue(summary);
       assert.match(summary, /Precio por unidad al solicitar: \$\s*1\.250 COP/);
@@ -1551,10 +1554,11 @@ async function main(): Promise<void> {
       ).toBeVisible();
       const copiedSummary = await page.evaluate(() => navigator.clipboard.readText());
       assert.equal(copiedSummary.replaceAll("\r\n", "\n"), summary);
-      await producerPage.getByRole("button", { name: "Retirar número" }).click();
-      await expect(producerPage.getByText("Retiramos el número compartido.")).toBeVisible();
+      await producerPage.getByRole("button", { name: "Dejar de compartir" }).click();
+      await expect(producerPage.getByText("Dejamos de compartir tu teléfono con este comprador.")).toBeVisible();
       await page.reload();
       await expect(whatsapp).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "Llamar al vendedor" })).toHaveCount(0);
       await page
         .getByRole("list", { name: "Seguimiento de tu solicitud" })
         .getByText("Respuesta del productor")

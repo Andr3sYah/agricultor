@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentIdentity } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
 import { isOrderSellerContactAvailable } from "./order-seller-contact";
+import { getSellerPhoneForOrderSharing, isSellerProfileAvailable } from "@/features/sellers/seller-profile";
 
 export async function saveOrderSellerContact(
   orderId: string,
@@ -19,22 +20,25 @@ export async function saveOrderSellerContact(
   if (!order) return { message: "No encontramos ese pedido aceptado en tu cuenta." };
   if (!await isOrderSellerContactAvailable()) return { message: "Esta opción todavía no está disponible." };
 
-  if (formData.get("operacion") === "retirar") {
+  if (formData.get("operation") === "remove") {
     await prisma.orderSellerContact.deleteMany({ where: { orderId: order.id } });
     revalidatePath("/mi-cuenta/pedidos");
-    return { ok: true, message: "Retiramos el número compartido." };
+    return { ok: true, message: "Dejamos de compartir tu teléfono con este comprador." };
   }
-  const raw = formData.get("whatsapp");
-  const normalized = typeof raw === "string" ? raw.trim().replace(/[ ()-]/g, "") : "";
-  const number = normalized.replace(/^\+?57(?=3\d{9}$)/, "");
-  if (!/^3\d{9}$/.test(number)) return { message: "Escribe un celular colombiano de 10 dígitos." };
+  if (formData.get("operation") !== "share") return { message: "Elige cómo actualizar el contacto del pedido." };
+  if (!await isSellerProfileAvailable()) return { message: "Actualiza primero tu perfil de vendedor." };
+  const profile = await prisma.sellerProfile.findUnique({
+    where: { ownerId: actor.userId },
+    select: { phone: true, whatsapp: true, whatsappLink: true, whatsappPublic: true },
+  });
+  const phone = profile ? getSellerPhoneForOrderSharing(profile) : null;
+  if (!phone) return { message: "Registra un teléfono de contacto válido en tu perfil antes de compartirlo." };
 
-  const whatsapp = `57${number}`;
   await prisma.orderSellerContact.upsert({
     where: { orderId: order.id },
-    create: { orderId: order.id, whatsapp },
-    update: { whatsapp },
+    create: { orderId: order.id, phone },
+    update: { phone },
   });
   revalidatePath("/mi-cuenta/pedidos");
-  return { ok: true, message: "Compartimos el WhatsApp con el comprador de este pedido." };
+  return { ok: true, message: "Compartimos tu teléfono de contacto con el comprador de este pedido." };
 }

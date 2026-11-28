@@ -302,7 +302,7 @@ model OrderExternalPayment {
 model OrderSellerContact {
   orderId  String @id
   order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  whatsapp String @db.VarChar(12)
+  phone    String @db.VarChar(12) @map("whatsapp")
 }
 
 model OrderHistory {

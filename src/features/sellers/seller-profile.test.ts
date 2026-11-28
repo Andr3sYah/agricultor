@@ -3,21 +3,21 @@ import { describe, it } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { SellerPublicContact } from "./seller-public-contact";
+import { SellerProfileForm } from "./seller-profile-form";
 import {
   getSellerContactVisibility,
   getSellerExactLocationVisibility,
+  getSellerPhoneForOrderSharing,
   getSellerPublicContact,
   normalizeRequiredSellerContact,
   normalizeSellerEmail,
   normalizeSellerExactLocation,
   normalizeSellerNeighborhood,
   normalizeSellerPhone,
-  normalizeSellerWhatsappChoice,
   normalizeSellerWhatsappLink,
 } from "./seller-profile";
 
 const contacts = {
-  whatsapp: "573001234567",
   phone: "573011234567",
   email: "ventas@example.com",
 };
@@ -26,29 +26,20 @@ describe("seller profile contact opt-in normalization", () => {
   it("normalizes Colombian mobile numbers and rejects invalid values", () => {
     assert.equal(normalizeSellerPhone(" 300 123-4567 "), "573001234567");
     assert.equal(normalizeSellerPhone("+57 3001234567"), "573001234567");
+    assert.equal(normalizeSellerPhone("57 (300) 123.4567"), "573001234567");
+    assert.equal(normalizeSellerPhone("0057 3001234567"), "573001234567");
     assert.equal(normalizeSellerPhone("6011234567"), null);
+    assert.equal(normalizeSellerPhone("+57 6011234567"), null);
+    assert.equal(normalizeSellerPhone("57300123456"), null);
+    assert.equal(normalizeSellerPhone("30012345678"), null);
     assert.equal(normalizeSellerPhone(""), null);
   });
 
-  it("supports same phone, another Colombian number, or a validated WhatsApp link", () => {
-    assert.deepEqual(normalizeSellerWhatsappChoice("PHONE", "", ""), {
-      whatsapp: null,
-      whatsappLink: null,
-    });
-    assert.deepEqual(normalizeSellerWhatsappChoice("OTHER_PHONE", "+57 300 123 4567", ""), {
-      whatsapp: "573001234567",
-      whatsappLink: null,
-    });
-    assert.deepEqual(normalizeSellerWhatsappChoice("LINK", "", "https://wa.me/573001234567"), {
-      whatsapp: null,
-      whatsappLink: "https://wa.me/573001234567",
-    });
+  it("normalizes legacy WhatsApp links only for backward-compatible reads", () => {
     assert.equal(
       normalizeSellerWhatsappLink("https://api.whatsapp.com/send?phone=573001234567"),
       "https://wa.me/573001234567",
     );
-    assert.equal(normalizeSellerWhatsappChoice("OTHER_PHONE", "6011234567", ""), null);
-    assert.equal(normalizeSellerWhatsappChoice("LINK", "", "https://example.com/"), null);
   });
 
   it("accepts only HTTPS WhatsApp links for valid Colombian mobile numbers", () => {
@@ -72,7 +63,7 @@ describe("seller profile contact opt-in normalization", () => {
     assert.equal(normalizeSellerEmail(""), null);
   });
 
-  it("requires a valid cellular, email, and approximate neighborhood together", () => {
+  it("requires a valid contact phone, email, and approximate neighborhood together", () => {
     assert.deepEqual(normalizeRequiredSellerContact({
       phone: "3001234567",
       email: " ventas@example.com ",
@@ -153,30 +144,14 @@ describe("seller profile contact opt-in normalization", () => {
 
   it("keeps contact details private unless the new combined consent is present", () => {
     const form = new FormData();
-    form.set("phonePublic", "on");
-    form.set("emailPublic", "on");
     assert.deepEqual(getSellerContactVisibility(form, contacts), {
-      whatsappPublic: false,
       phonePublic: false,
       emailPublic: false,
     });
 
-    for (const [field, publicFlag] of [
-      ["whatsappPublic", "whatsappPublic"],
-    ] as const) {
-      const optedInForm = new FormData();
-      optedInForm.set(field, "on");
-      assert.deepEqual(getSellerContactVisibility(optedInForm, contacts), {
-        whatsappPublic: publicFlag === "whatsappPublic",
-        phonePublic: false,
-        emailPublic: false,
-      });
-    }
-
     const acceptedForm = new FormData();
     acceptedForm.set("publishContacts", "on");
     assert.deepEqual(getSellerContactVisibility(acceptedForm, contacts), {
-      whatsappPublic: false,
       phonePublic: true,
       emailPublic: true,
     });
@@ -184,15 +159,11 @@ describe("seller profile contact opt-in normalization", () => {
 
   it("does not publish a contact channel without a valid contact value", () => {
     const form = new FormData();
-    form.set("whatsappPublic", "on");
-    form.set("phonePublic", "on");
-    form.set("emailPublic", "on");
     form.set("publishContacts", "on");
 
     assert.deepEqual(
       getSellerContactVisibility(form, { ...contacts, phone: null }),
       {
-        whatsappPublic: true,
         phonePublic: false,
         emailPublic: true,
       },
@@ -226,58 +197,30 @@ describe("seller profile contact opt-in normalization", () => {
       neighborhood: "El Porvenir",
       municipality: "La Vega",
       exactLocation: null,
-      whatsappUrl: null,
+      whatsappUrl: "https://wa.me/573001234567",
     });
     assert.equal("preciseAddress" in (publicContact ?? {}), false);
   });
 
-  it("only exposes WhatsApp when its separate public-contact opt-in is enabled", () => {
+  it("uses the same opted-in phone for calling and WhatsApp", () => {
     const profile = {
       municipality: "La Vega",
       neighborhood: "El Porvenir",
       whatsapp: "573001234567",
-      whatsappPublic: false,
-      phone: "573011234567",
-      phonePublic: true,
-      email: "ventas@example.test",
-      emailPublic: true,
-      publicContactConsentAt: new Date("2026-11-27T00:00:00.000Z"),
-    };
-
-    assert.equal(getSellerPublicContact(profile)?.whatsappUrl, null);
-    assert.equal(
-      getSellerPublicContact({ ...profile, whatsappPublic: true })?.whatsappUrl,
-      "https://wa.me/573001234567",
-    );
-    assert.equal(
-      getSellerPublicContact({
-        ...profile,
-        whatsapp: null,
-        whatsappLink: "https://wa.me/573991234567",
-        whatsappPublic: true,
-      })?.whatsappUrl,
-      "https://wa.me/573991234567",
-    );
-  });
-
-  it("uses the public contact phone for WhatsApp when no alternate number or link is set", () => {
-    const profile = {
-      municipality: "La Vega",
-      neighborhood: "El Porvenir",
-      phone: "573011234567",
-      phonePublic: true,
-      email: "ventas@example.test",
-      emailPublic: true,
       whatsappPublic: true,
+      phone: "573011234567",
+      phonePublic: true,
+      email: "ventas@example.test",
+      emailPublic: true,
       publicContactConsentAt: new Date("2026-11-27T00:00:00.000Z"),
     };
-    assert.equal(
-      getSellerPublicContact(profile)?.whatsappUrl,
-      "https://wa.me/573011234567",
-    );
+
+    const contact = getSellerPublicContact(profile);
+    assert.equal(contact?.phone, "573011234567");
+    assert.equal(contact?.whatsappUrl, "https://wa.me/573011234567");
   });
 
-  it("renders negotiation guidance and only the seller's opted-in public channels", () => {
+  it("renders the one contact phone for calling and WhatsApp", () => {
     const markup = renderToStaticMarkup(
       createElement(SellerPublicContact, {
         negotiating: true,
@@ -297,10 +240,86 @@ describe("seller profile contact opt-in normalization", () => {
 
     assert.match(markup, /Contacta al vendedor para acordar el precio/);
     assert.match(markup, /fuera de Agricultor/);
-    assert.match(markup, /href="https:\/\/wa\.me\/573001234567"/);
+    assert.match(markup, /href="https:\/\/wa\.me\/573011234567"/);
     assert.match(markup, /href="tel:\+573011234567"/);
     assert.match(markup, /href="mailto:ventas@example\.test"/);
+    assert.match(markup, /Teléfono de contacto: \+57 3011234567/);
     assert.match(markup, /El Porvenir, La Vega/);
     assert.doesNotMatch(markup, /dirección exacta/i);
+    assert.doesNotMatch(markup, /573001234567/);
+  });
+
+  it("renders one required phone field and no seller-entered WhatsApp link", () => {
+    const markup = renderToStaticMarkup(
+      createElement(SellerProfileForm, { profile: null }),
+    );
+    assert.match(markup, /Teléfono de contacto/);
+    assert.match(markup, /name="phone"/);
+    assert.match(markup, /type="tel"/);
+    assert.match(markup, /required=""/);
+    assert.equal(markup.match(/type="tel"/g)?.length, 1);
+    assert.doesNotMatch(markup, /whatsappMode|whatsappLink|whatsappPublic|type="url"/);
+    assert.doesNotMatch(markup, /wa\.me|api\.whatsapp\.com/);
+  });
+
+  it("keeps legacy WhatsApp-only profiles usable only with consent", () => {
+    const legacy = {
+      municipality: "La Vega",
+      neighborhood: "El Porvenir",
+      whatsapp: "573001234567",
+      whatsappPublic: true,
+      phone: null,
+      phonePublic: false,
+      email: "ventas@example.test",
+      emailPublic: true,
+      publicContactConsentAt: new Date("2026-11-27T00:00:00.000Z"),
+    };
+    assert.equal(getSellerPublicContact(legacy)?.phone, "573001234567");
+    assert.equal(
+      getSellerPublicContact({ ...legacy, publicContactConsentAt: null }),
+      null,
+    );
+    assert.equal(
+      getSellerPublicContact({ ...legacy, whatsappPublic: false }),
+      null,
+    );
+    const legacyLink = getSellerPublicContact({
+      ...legacy,
+      whatsapp: null,
+      whatsappLink: "https://wa.me/573991234567",
+    });
+    assert.equal(legacyLink?.phone, "573991234567");
+    assert.equal(legacyLink?.whatsappUrl, "https://wa.me/573991234567");
+    assert.equal("whatsappLink" in (legacyLink ?? {}), false);
+  });
+
+  it("uses the profile phone for order sharing and only falls back to opted-in legacy WhatsApp", () => {
+    assert.equal(
+      getSellerPhoneForOrderSharing({
+        phone: "+57 300 123 4567",
+        whatsapp: "573991234567",
+        whatsappLink: null,
+        whatsappPublic: true,
+      }),
+      "573001234567",
+    );
+    assert.equal(
+      getSellerPhoneForOrderSharing({
+        phone: null,
+        whatsapp: "573991234567",
+        whatsappLink: null,
+        whatsappPublic: true,
+      }),
+      "573991234567",
+    );
+    assert.equal(
+      getSellerPhoneForOrderSharing({
+        phone: null,
+        whatsapp: "573991234567",
+        whatsappLink: null,
+        whatsappPublic: false,
+      }),
+      null,
+    );
   });
 });

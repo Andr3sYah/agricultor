@@ -237,10 +237,19 @@ describe("public catalog query and pagination", () => {
             is: {
               neighborhood: { not: null },
               publicContactConsentAt: { not: null },
-              phone: { not: null },
-              phonePublic: true,
               email: { not: null },
               emailPublic: true,
+              OR: [
+                { phone: { not: null }, phonePublic: true },
+                {
+                  whatsappPublic: true,
+                  OR: [
+                    { whatsapp: { not: null } },
+                    { whatsappLink: { not: null } },
+                    { phone: { not: null } },
+                  ],
+                },
+              ],
             },
           },
         },

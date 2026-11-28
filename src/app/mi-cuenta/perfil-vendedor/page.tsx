@@ -20,7 +20,7 @@ export default async function SellerProfileSettings() {
         Volver a mi cuenta
       </Link>
       <h1 className="text-3xl font-semibold">Perfil de vendedor</h1>
-      <p>Las ofertas públicas muestran tu celular y correo cuando aceptas compartirlos. Por separado, puedes aceptar publicar una ubicación exacta; si no lo haces, solo se muestra el barrio o vereda y el municipio. Los datos exactos de entrega de cada pedido se mantienen privados para las personas autorizadas. No incluyas cédulas ni información de terceros.</p>
+      <p>Las ofertas públicas muestran tu teléfono de contacto y correo cuando aceptas compartirlos. El mismo teléfono sirve para llamadas y WhatsApp. Por separado, puedes aceptar publicar una ubicación exacta; si no lo haces, solo se muestra el barrio o vereda y el municipio. Los datos exactos de entrega de cada pedido se mantienen privados para las personas autorizadas. No incluyas cédulas ni información de terceros.</p>
       {available ? <SellerProfileForm profile={profile} /> : <p>Esta opción todavía no está disponible.</p>}
       {profile?.published && <Link className="inline-flex min-h-11 items-center font-semibold text-emerald-900 underline" href={getSellerProfileHref(profile.id)}>Ver mi perfil público</Link>}
     </main>
