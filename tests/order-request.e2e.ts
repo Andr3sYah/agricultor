@@ -322,10 +322,23 @@ async function main(): Promise<void> {
     });
 
     const municipality = "Medellín";
+    const catalogSeller = await database.user.create({
+      data: {
+        id: randomUUID(),
+        name: "Vendedor fixture E2E",
+        email: `catalog-seller-${suffix}@example.test`,
+        emailVerified: true,
+      },
+      select: { id: true },
+    });
+    fixtureUserIds.push(catalogSeller.id);
+    await database.userRole.create({
+      data: { userId: catalogSeller.id, role: "PRODUCER" },
+    });
     await database.sellerProfile.create({
       data: {
-        ownerId: producer.id,
-        name: "Productor de prueba E2E",
+        ownerId: catalogSeller.id,
+        name: "Vendedor fixture E2E",
         description: "Perfil público para las ofertas del catálogo E2E.",
         department: "Antioquia",
         municipality,
@@ -333,13 +346,13 @@ async function main(): Promise<void> {
         published: true,
         phone: "573000000000",
         phonePublic: true,
-        email: producerEmail,
+        email: `catalog-seller-${suffix}@example.test`,
         emailPublic: true,
         publicContactConsentAt: new Date(),
       },
     });
     const catalogProduct = {
-      ownerId: producer.id,
+      ownerId: catalogSeller.id,
       category: "OTHER",
       availableQuantity: new Prisma.Decimal("5"),
       unit: "KG",
@@ -751,14 +764,36 @@ async function main(): Promise<void> {
       await producerPage.getByLabel("Precio de venta por unidad").fill("$2.000");
       await expect(costResult).toContainText(/Ingreso esperado\s*\$\s*5\.000/);
       await expect(costResult).toContainText(/Ganancia o pérdida\s*\$\s*3\.749,5/);
-      await producerPage.goto(`${baseURL}/mi-cuenta`);
-      await producerPage.getByRole("link", { name: "Editar perfil de vendedor" }).click();
-      await producerPage.getByLabel("Nombre comercial").fill("Distribución de prueba");
-      await producerPage.getByLabel("Municipio", { exact: true }).fill("La Vega");
+      await producerPage.goto(`${baseURL}/mi-cuenta/productos`);
+      const draftName = `Borrador venta E2E ${suffix}`;
+      await producerPage.getByLabel("Nombre del producto").fill(draftName);
+      await producerPage.getByLabel("Categoría", { exact: true }).selectOption("TUBERS");
+      await producerPage.getByLabel("Cantidad disponible", { exact: true }).fill("7,5");
+      await producerPage.getByLabel("Unidad de medida").selectOption("KG");
+      await producerPage.getByLabel("Precio en pesos por unidad").fill("$2.500");
+      await producerPage.getByLabel("Municipio o localidad").fill(municipality);
+      await producerPage.getByRole("link", { name: "completa tus datos de vendedor" }).click();
+      await expect(producerPage).toHaveURL(
+        `${baseURL}/mi-cuenta/perfil-vendedor?returnTo=%2Fmi-cuenta%2Fproductos%3Fintent%3Dsell`,
+      );
+      await producerPage.getByLabel("Nombre del vendedor o negocio").fill("Distribución de prueba");
+      await producerPage.getByLabel("Departamento").selectOption("Antioquia");
+      await producerPage.getByLabel("Municipio", { exact: true }).selectOption(municipality);
+      await producerPage.getByLabel("Teléfono de contacto").fill("3001234567");
+      await producerPage.getByLabel("Correo de contacto").fill(producerEmail);
       await producerPage.getByLabel("Descripción").fill("Distribuimos papa y hortalizas.");
+      await producerPage
+        .getByRole("checkbox", { name: "Acepto publicar mi teléfono y correo para recibir consultas de compradores." })
+        .check();
       await producerPage.getByRole("checkbox", { name: "Mostrar mi perfil en el catálogo" }).check();
-      await producerPage.getByRole("button", { name: "Guardar perfil" }).click();
-      await expect(producerPage.getByText("Tu perfil está publicado.")).toBeVisible();
+      await producerPage.getByRole("button", { name: "Guardar y continuar" }).click();
+      await producerPage.waitForURL(`${baseURL}/mi-cuenta/productos?intent=sell`);
+      await expect(producerPage.getByLabel("Nombre del producto")).toHaveValue(draftName);
+      await expect(producerPage.getByLabel("Categoría", { exact: true })).toHaveValue("TUBERS");
+      await expect(producerPage.getByLabel("Cantidad disponible", { exact: true })).toHaveValue("7,5");
+      await expect(producerPage.getByLabel("Unidad de medida")).toHaveValue("KG");
+      await expect(producerPage.getByLabel("Precio en pesos por unidad")).toHaveValue("$2.500");
+      await expect(producerPage.getByText("Medellín, Antioquia", { exact: true })).toBeVisible();
       await producerPage.goto(`${baseURL}/mi-cuenta/productos`);
       await producerPage.setViewportSize({ width: 1024, height: 768 });
       const inventoryAction = await producerPage
@@ -786,19 +821,17 @@ async function main(): Promise<void> {
       assert.ok(mobileInventoryAction && mobileSellAction);
       assert.ok(mobileSellAction.y >= mobileInventoryAction.y + mobileInventoryAction.height);
       const harvestName = `Papa E2E ${suffix}`;
-      const harvestMunicipality = `Municipio para papa ${suffix}`;
+      const harvestMunicipality = municipality;
       const cropName = producerPage.getByLabel("Nombre del producto");
       const cropCategory = producerPage.getByLabel("Categoría", { exact: true });
       const cropQuantity = producerPage.getByLabel("Cantidad disponible", { exact: true });
       const cropUnit = producerPage.getByLabel("Unidad de medida");
       const cropPrice = producerPage.getByLabel("Precio en pesos por unidad");
-      const cropMunicipality = producerPage.getByLabel("Municipio o localidad");
       await cropName.fill(harvestName);
       await cropCategory.selectOption("TUBERS");
       await cropQuantity.fill("12,5");
       await cropUnit.selectOption("KG");
       await cropPrice.fill("2.00");
-      await cropMunicipality.fill(harvestMunicipality);
       const saveProduct = producerPage.getByRole("button", {
         name: "Guardar en inventario",
       });
@@ -808,7 +841,6 @@ async function main(): Promise<void> {
       await expect(cropCategory).toHaveValue("TUBERS");
       await expect(cropQuantity).toHaveValue("12,5");
       await expect(cropUnit).toHaveValue("KG");
-      await expect(cropMunicipality).toHaveValue(harvestMunicipality);
       await cropPrice.fill("$2.000");
       await saveProduct.click();
       const savedCrop = producerPage.getByRole("listitem").filter({ hasText: harvestName });
@@ -838,13 +870,12 @@ async function main(): Promise<void> {
       await expect(publicCrop.locator("time")).toHaveAttribute("datetime", /Z$/);
 
       const directSaleName = `Venta directa E2E ${suffix}`;
-      const directSaleMunicipality = `Municipio venta directa ${suffix}`;
+      const directSaleMunicipality = municipality;
       await cropName.fill(directSaleName);
       await cropCategory.selectOption("TUBERS");
       await cropQuantity.fill("6");
       await cropUnit.selectOption("KG");
       await cropPrice.fill("$3.500");
-      await cropMunicipality.fill(directSaleMunicipality);
       await producerPage.getByRole("button", { name: "Vender producto" }).click();
       const directSale = producerPage.getByRole("listitem").filter({
         hasText: directSaleName,
@@ -889,7 +920,6 @@ async function main(): Promise<void> {
       await cropQuantity.fill("3");
       await cropUnit.selectOption("KG");
       await producerPage.locator('input[name="pricingType"][value="NEGOTIABLE"]').check();
-      await cropMunicipality.fill(directSaleMunicipality);
       await producerPage.getByRole("button", { name: "Vender producto" }).click();
       const negotiableOfferCard = producerPage.getByRole("listitem").filter({
         hasText: negotiableSaleName,
