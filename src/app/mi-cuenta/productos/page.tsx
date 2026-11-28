@@ -17,6 +17,11 @@ import {
 } from "@/features/products/product-validation";
 import { getCurrentIdentity } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
+import {
+  isSellerProfileAvailable,
+  isSellerProfileCompleteForSales,
+} from "@/features/sellers/seller-profile";
+import { inferColombianLocation } from "@/features/sellers/colombian-location";
 
 const copFormatter = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -27,7 +32,13 @@ const quantityFormatter = new Intl.NumberFormat("es-CO", {
   maximumFractionDigits: 3,
 });
 
-export default async function ProductsPage() {
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const sellIntent = params.intent === "sell";
   const identity = await getCurrentIdentity();
 
   if (!identity) {
@@ -36,6 +47,23 @@ export default async function ProductsPage() {
 
   if (!canManageProducts(identity.roles)) {
     redirect("/mi-cuenta");
+  }
+
+  const profileAvailable = await isSellerProfileAvailable();
+  const sellerProfile = profileAvailable
+    ? await prisma.sellerProfile.findUnique({ where: { ownerId: identity.userId } })
+    : null;
+  const sellerLocation = sellerProfile
+    ? inferColombianLocation(
+        sellerProfile.municipality,
+        sellerProfile.department,
+      )
+    : null;
+  const sellerProfileComplete = isSellerProfileCompleteForSales(sellerProfile);
+  if (sellIntent && !sellerProfileComplete) {
+    redirect(
+      `/mi-cuenta/perfil-vendedor?returnTo=${encodeURIComponent("/mi-cuenta/productos?intent=sell")}`,
+    );
   }
 
   const products = await prisma.product.findMany({
@@ -75,7 +103,7 @@ export default async function ProductsPage() {
         >
           <Link
             className="font-semibold text-emerald-900 underline underline-offset-4"
-            href="#formulario-producto"
+            href="/mi-cuenta/productos?intent=sell#formulario-producto"
           >
             Vender producto
           </Link>
@@ -92,7 +120,12 @@ export default async function ProductsPage() {
             Ver catálogo publicado
           </Link>
         </nav>
-        <ProductForm />
+        <ProductForm
+          allowSell={sellerProfileComplete}
+          draftStorageKey={identity.userId}
+          sellerDepartment={sellerProfileComplete ? sellerLocation?.department : ""}
+          sellerMunicipality={sellerProfileComplete ? sellerLocation?.municipality : ""}
+        />
       </section>
       <section className="mt-8 rounded-3xl border border-emerald-950/10 bg-white p-5 shadow-sm sm:p-12">
         <h2 className="text-2xl font-semibold">Tus productos</h2>
@@ -192,10 +225,23 @@ export default async function ProductsPage() {
                   >
                     Editar producto
                   </Link>
-                  <PublicationToggle
-                    isPublished={product.isPublished}
-                    productId={product.id}
-                  />
+                  {sellerProfileComplete ? (
+                    <PublicationToggle
+                      isPublished={product.isPublished}
+                      productId={product.id}
+                    />
+                  ) : (
+                    <p className="mt-4 text-sm text-slate-700">
+                      Para publicar este producto,{" "}
+                      <Link
+                        className="font-semibold text-emerald-900 underline"
+                        href={`/mi-cuenta/perfil-vendedor?returnTo=${encodeURIComponent("/mi-cuenta/productos?intent=sell")}`}
+                      >
+                        completa tus datos de vendedor
+                      </Link>
+                      .
+                    </p>
+                  )}
                 </li>
               );
             })}

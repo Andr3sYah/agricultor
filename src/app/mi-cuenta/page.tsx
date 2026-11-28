@@ -28,7 +28,7 @@ export default async function AccountPage({
   }
 
   const canSell = canManageProducts(identity.roles);
-  if (producerIntent && canSell) redirect("/mi-cuenta/productos");
+  if (producerIntent && canSell) redirect("/mi-cuenta/productos?intent=sell");
 
   const [dashboard, todayCount, sellerProfileAvailable] = canSell
     ? await Promise.all([
@@ -72,7 +72,7 @@ export default async function AccountPage({
                 </div>
               </dl>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                <Link className={primary} href="/mi-cuenta/productos#formulario-producto">Vender producto</Link>
+                <Link className={primary} href="/mi-cuenta/productos?intent=sell#formulario-producto">Vender producto</Link>
                 <Link className={secondary} href="/mi-cuenta/productos">Gestionar inventario</Link>
                 <Link
                   className={secondary}

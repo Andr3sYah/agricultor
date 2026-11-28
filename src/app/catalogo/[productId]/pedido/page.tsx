@@ -59,6 +59,7 @@ export default async function RequestOrderPage({
         select: {
           sellerProfile: {
             select: {
+              department: true,
               municipality: true,
               neighborhood: true,
               exactLocation: true,

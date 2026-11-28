@@ -58,6 +58,8 @@ describe(
     let incompleteProducer: ProductActor;
     let buyer: ProductActor;
     let otherProducer: ProductActor;
+    let invalidLocationProducer: ProductActor;
+    let legacyLocationProducer: ProductActor;
     let fixtureUserIds: string[] = [];
 
     before(async () => {
@@ -71,11 +73,21 @@ describe(
       incompleteProducer = { userId: `sale-test-incomplete-${suffix}`, roles: ["PRODUCER"] };
       buyer = { userId: `sale-test-buyer-${suffix}`, roles: ["BUYER"] };
       otherProducer = { userId: `sale-test-other-${suffix}`, roles: ["PRODUCER"] };
+      invalidLocationProducer = {
+        userId: `sale-test-invalid-location-${suffix}`,
+        roles: ["PRODUCER"],
+      };
+      legacyLocationProducer = {
+        userId: `sale-test-legacy-location-${suffix}`,
+        roles: ["PRODUCER"],
+      };
       fixtureUserIds = [
         completeProducer.userId,
         incompleteProducer.userId,
         buyer.userId,
         otherProducer.userId,
+        invalidLocationProducer.userId,
+        legacyLocationProducer.userId,
       ];
 
       await database.user.createMany({
@@ -92,6 +104,8 @@ describe(
           { userId: incompleteProducer.userId, role: "PRODUCER" },
           { userId: buyer.userId, role: "BUYER" },
           { userId: otherProducer.userId, role: "PRODUCER" },
+          { userId: invalidLocationProducer.userId, role: "PRODUCER" },
+          { userId: legacyLocationProducer.userId, role: "PRODUCER" },
         ],
       });
       await database.sellerProfile.create({
@@ -99,7 +113,8 @@ describe(
           ownerId: completeProducer.userId,
           name: "Productor de prueba",
           description: "Perfil de prueba para ofertas públicas",
-          municipality: "Local",
+          department: "Antioquia",
+          municipality: "Medellín",
           neighborhood: "El Porvenir",
           phone: "573001234567",
           phonePublic: true,
@@ -110,10 +125,38 @@ describe(
       });
       await database.sellerProfile.create({
         data: {
+          ownerId: legacyLocationProducer.userId,
+          name: "Vendedor de ubicación heredada",
+          description: "Se infiere el departamento de un municipio conocido.",
+          municipality: "Leticia",
+          phone: "573001234567",
+          phonePublic: true,
+          email: "legacy-location@example.test",
+          emailPublic: true,
+          publicContactConsentAt: new Date(),
+        },
+      });
+      await database.sellerProfile.create({
+        data: {
+          ownerId: invalidLocationProducer.userId,
+          name: "Vendedor con municipio no correspondiente",
+          description: "El municipio no pertenece al departamento elegido.",
+          department: "Antioquia",
+          municipality: "Cali",
+          phone: "573001234567",
+          phonePublic: true,
+          email: "ubicacion-invalida@example.test",
+          emailPublic: true,
+          publicContactConsentAt: new Date(),
+        },
+      });
+      await database.sellerProfile.create({
+        data: {
           ownerId: incompleteProducer.userId,
           name: "Vendedor sin teléfono",
           description: "Perfil que no puede publicar sin un teléfono válido.",
-          municipality: "Local",
+          department: "Antioquia",
+          municipality: "Medellín",
           neighborhood: "El Porvenir",
           phone: null,
           phonePublic: false,
@@ -165,6 +208,7 @@ describe(
       assert.equal(fixedProduct.priceCOP, 2500);
       assert.equal(fixedProduct.photoUrl, null);
       assert.ok(fixedProduct.availableQuantity.equals("2.5"));
+      assert.equal(fixedProduct.municipality, "Medellín");
 
       const negotiableProduct = await database.product.findUniqueOrThrow({
         where: { id: negotiable.productId },
@@ -203,6 +247,44 @@ describe(
         database,
       );
       assert.deepEqual(zeroStock, { ok: false, code: "unavailable" });
+    });
+
+    it("rejects a public offer when its profile municipality is outside the department", async () => {
+      const result = await createProducerProduct(
+        invalidLocationProducer,
+        productInput(),
+        true,
+        database,
+      );
+      assert.deepEqual(result, {
+        ok: false,
+        code: "seller-profile-incomplete",
+      });
+      assert.equal(
+        await database.product.count({
+          where: { ownerId: invalidLocationProducer.userId },
+        }),
+        0,
+      );
+    });
+
+    it("requires a legacy profile to confirm its inferred department before selling", async () => {
+      const result = await createProducerProduct(
+        legacyLocationProducer,
+        productInput(),
+        true,
+        database,
+      );
+      assert.deepEqual(result, {
+        ok: false,
+        code: "seller-profile-incomplete",
+      });
+      assert.equal(
+        await database.product.count({
+          where: { ownerId: legacyLocationProducer.userId },
+        }),
+        0,
+      );
     });
 
     it("allows zero-stock private inventory while rejecting unauthorized direct sales", async () => {
@@ -284,6 +366,11 @@ describe(
         (await database.product.findUniqueOrThrow({ where: { id: saved.productId } }))
           .isPublished,
         true,
+      );
+      assert.equal(
+        (await database.product.findUniqueOrThrow({ where: { id: saved.productId } }))
+          .municipality,
+        "Medellín",
       );
       assert.deepEqual(
         await setProducerProductPublication(

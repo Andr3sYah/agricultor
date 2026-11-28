@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getCurrentIdentity } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
 import {
@@ -11,6 +12,7 @@ import {
   normalizeSellerExactLocation,
   normalizeRequiredSellerContact,
 } from "./seller-profile";
+import { resolveColombianLocation } from "./colombian-location";
 
 type ProfileState = { message: string; ok?: boolean };
 
@@ -18,18 +20,24 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
   const identity = await getCurrentIdentity();
   if (!identity?.roles.includes("PRODUCER")) return { message: "Necesitas el perfil de vendedor." };
   if (!await isSellerProfileAvailable()) return { message: "Esta opción todavía no está disponible." };
-  const fields = ["name", "description", "municipality"] as const;
+  const fields = ["name", "description"] as const;
   const values = Object.fromEntries(fields.map((field) => {
     const value = form.get(field);
     return [field, typeof value === "string" ? value.trim() : ""];
   })) as Record<(typeof fields)[number], string>;
   if (
     values.name.length < 2 || values.name.length > 80 ||
-    values.municipality.length < 2 || values.municipality.length > 100 ||
-    !values.description || values.description.length > 600 ||
+    values.description.length > 600 ||
     fields.some((field) => values[field].includes("\0"))
   ) {
-    return { message: "Revisa el nombre, el municipio y la descripción." };
+    return { message: "Escribe un nombre válido para tu perfil." };
+  }
+  const location = resolveColombianLocation(
+    form.get("department"),
+    form.get("municipality"),
+  );
+  if (!location) {
+    return { message: "Elige un departamento y un municipio de la lista." };
   }
   const contact = normalizeRequiredSellerContact({
     phone: form.get("phone"),
@@ -37,9 +45,11 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
     neighborhood: form.get("neighborhood"),
   });
   if (!contact) {
-    return { message: "Completa un teléfono de contacto y un correo válidos, además de un barrio o vereda aproximados, sin dirección exacta." };
+    return { message: "Escribe un celular y un correo válidos. Revisa el barrio si lo agregaste." };
   }
   const { phone, email, neighborhood } = contact;
+  const description =
+    values.description || "Productor local";
   const rawExactLocation = form.get("exactLocation");
   const exactLocation = normalizeSellerExactLocation(rawExactLocation);
   const publishExactLocation =
@@ -65,6 +75,9 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
   });
   const data = {
     ...values,
+    description,
+    department: location.department,
+    municipality: location.municipality,
     published,
     neighborhood,
     exactLocation,
@@ -96,10 +109,17 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
   revalidatePath("/catalogo");
   revalidatePath("/catalogo/[productId]", "page");
   revalidatePath("/catalogo/[productId]/pedido", "page");
+  const returnTo = form.get("returnTo");
+  if (
+    publishContacts &&
+    returnTo === "/mi-cuenta/productos?intent=sell"
+  ) {
+    redirect(returnTo);
+  }
   return {
     ok: true,
     message: publishContacts
       ? data.published ? "Tu perfil está publicado." : "Guardamos tu perfil como privado."
-      : "Retiramos la publicación de tu perfil y tus ofertas. Para volver a ofrecer productos, completa y acepta los datos públicos.",
+      : "Guardamos el perfil como privado. Para vender, acepta compartir el teléfono y el correo.",
   };
 }

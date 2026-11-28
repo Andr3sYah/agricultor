@@ -1,3 +1,5 @@
+import { inferColombianLocation } from "./colombian-location";
+
 export function normalizeSellerPhone(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const normalized = value.trim().replace(/[ ().-]/g, "");
@@ -77,12 +79,18 @@ export function normalizeSellerExactLocation(value: unknown): string | null {
 export function normalizeRequiredSellerContact(input: {
   phone: unknown;
   email: unknown;
-  neighborhood: unknown;
+  neighborhood?: unknown;
 }) {
   const phone = normalizeSellerPhone(input.phone);
   const email = normalizeSellerEmail(input.email);
-  const neighborhood = normalizeSellerNeighborhood(input.neighborhood);
-  return phone && email && neighborhood ? { phone, email, neighborhood } : null;
+  const rawNeighborhood =
+    typeof input.neighborhood === "string" ? input.neighborhood.trim() : "";
+  const neighborhood = rawNeighborhood
+    ? normalizeSellerNeighborhood(input.neighborhood)
+    : null;
+  return phone && email && (!rawNeighborhood || neighborhood)
+    ? { phone, email, neighborhood }
+    : null;
 }
 
 export function getSellerContactVisibility(
@@ -109,7 +117,7 @@ export function getSellerExactLocationVisibility(
 }
 
 export const PUBLIC_SELLER_CONTACT_CONDITION = {
-  neighborhood: { not: null },
+  department: { not: null },
   publicContactConsentAt: { not: null },
   email: { not: null },
   emailPublic: true,
@@ -139,6 +147,7 @@ export function getPublicSellerOfferCondition() {
 }
 
 export type SellerPublicContactProfile = {
+  department?: string | null;
   municipality: string;
   neighborhood: string | null;
   exactLocation?: string | null;
@@ -188,9 +197,14 @@ export function getSellerPublicContact(profile: SellerPublicContactProfile) {
     profile.exactLocationPublic && profile.exactLocationConsentAt
       ? normalizeSellerExactLocation(profile.exactLocation)
       : null;
+  const location = inferColombianLocation(
+    profile.municipality,
+    profile.department,
+  );
   return {
     ...details,
-    municipality: profile.municipality,
+    department: location?.department ?? profile.department ?? null,
+    municipality: location?.municipality ?? profile.municipality,
     exactLocation,
     whatsappUrl: `https://wa.me/${details.phone}`,
   };

@@ -69,6 +69,7 @@ model SellerProfile {
   owner       User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   name        String  @db.VarChar(80)
   description String  @db.VarChar(600)
+  department  String? @db.VarChar(100)
   municipality String @db.VarChar(100)
   neighborhood String? @db.VarChar(100)
   exactLocation String? @db.VarChar(240)

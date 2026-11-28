@@ -22,6 +22,7 @@ export default async function PublicSellerProfile({ params }: { params: Promise<
     select: {
       name: true,
       description: true,
+      department: true,
       municipality: true,
       neighborhood: true,
       exactLocation: true,
@@ -69,7 +70,9 @@ export default async function PublicSellerProfile({ params }: { params: Promise<
       <Link className="inline-flex min-h-11 items-center font-semibold text-emerald-900 underline" href="/catalogo">Volver al catálogo</Link>
       <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
         <h1 className="text-3xl font-semibold wrap-anywhere">{profile.name}</h1>
-        <p className="font-medium wrap-anywhere">{profile.municipality}</p>
+        <p className="font-medium wrap-anywhere">
+          {profile.municipality}{profile.department ? `, ${profile.department}` : ""}
+        </p>
         <p className="whitespace-pre-wrap wrap-anywhere">{profile.description}</p>
         <SellerPublicContact profile={profile} />
         {ratings && (

@@ -2,6 +2,7 @@
 
 import { Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   getPublicProductHref,
   getPublicProductOrderHref,
@@ -120,12 +121,9 @@ export async function createProduct(
   const creation = await createProducerProduct(identity, result.data, publish, prisma);
   if (!creation.ok) {
     if (creation.code === "seller-profile-incomplete") {
-      return {
-        message:
-          "Completa tu perfil de vendedor con teléfono de contacto, correo y barrio aproximado, y acepta mostrarlos antes de publicar ofertas.",
-        sellerProfileRequired: true,
-        values: submittedValues(formData),
-      };
+      redirect(
+        `/mi-cuenta/perfil-vendedor?returnTo=${encodeURIComponent("/mi-cuenta/productos?intent=sell")}`,
+      );
     }
     if (creation.code === "unavailable") {
       return {
@@ -172,7 +170,7 @@ export async function updateProduct(
 
   const product = await prisma.product.findUnique({
     where: { id: productId },
-    select: { ownerId: true },
+    select: { ownerId: true, municipality: true },
   });
 
   if (!product || !canEditProduct(identity, product.ownerId)) {
@@ -208,7 +206,10 @@ export async function updateProduct(
           ),
         },
       },
-      data: productData(result.data),
+      data: productData({
+        ...result.data,
+        municipality: product.municipality,
+      }),
     });
     if (updated.count !== 1) return 0;
 

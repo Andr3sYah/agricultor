@@ -53,9 +53,9 @@ export function PublicationToggle({
       {state.sellerProfileRequired && (
         <a
           className="mt-2 inline-flex min-h-11 items-center font-semibold text-emerald-900 underline"
-          href="/mi-cuenta/perfil-vendedor"
+          href={`/mi-cuenta/perfil-vendedor?returnTo=${encodeURIComponent("/mi-cuenta/productos?intent=sell")}`}
         >
-          Completar perfil de vendedor
+          Completar datos para vender
         </a>
       )}
     </form>

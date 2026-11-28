@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { canEditProduct, canManageProducts } from "./product-access";
+import { readProductDraft, writeProductDraft } from "./product-draft";
+import { COLOMBIA_DEPARTMENTS } from "@/features/sellers/colombian-location";
 import {
   getAvailabilityLabel,
   validateProductInput,
@@ -162,5 +164,59 @@ describe("product management policies and validation", () => {
   it("derives availability from quantity so zero is always sold out", () => {
     assert.equal(getAvailabilityLabel("0.000"), "Agotado");
     assert.equal(getAvailabilityLabel("0.125"), "Disponible");
+  });
+
+  it("persists only bounded product fields for the profile setup return", () => {
+    assert.equal(COLOMBIA_DEPARTMENTS.length, 33);
+    assert.ok(
+      COLOMBIA_DEPARTMENTS.reduce(
+        (count, department) => count + department.municipalities.length,
+        0,
+      ) > 1000,
+    );
+    const values = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+      removeItem: (key: string) => values.delete(key),
+    };
+    const formData = new FormData();
+    formData.set("name", "Tomate");
+    formData.set("category", "VEGETABLES");
+    formData.set("availableQuantity", "12,5");
+    formData.set("unit", "KG");
+    formData.set("pricingType", "NEGOTIABLE");
+    formData.set("priceCOP", "2500");
+    formData.set("municipality", "Medellín");
+    formData.set("intent", "sell");
+
+    writeProductDraft(storage, "draft", formData);
+    assert.deepEqual(readProductDraft(storage, "draft"), {
+      name: "Tomate",
+      category: "VEGETABLES",
+      availableQuantity: "12,5",
+      unit: "KG",
+      pricingType: "NEGOTIABLE",
+      priceCOP: "2500",
+      municipality: "Medellín",
+    });
+  });
+
+  it("discards malformed or oversized product drafts", () => {
+    const values = new Map<string, string>([
+      ["malformed", "{not-json"],
+      ["oversized", JSON.stringify({ name: "x".repeat(101), category: "FRUITS" })],
+    ]);
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+      removeItem: (key: string) => values.delete(key),
+    };
+
+    assert.equal(readProductDraft(storage, "malformed"), null);
+    assert.equal(values.has("malformed"), false);
+    assert.deepEqual(readProductDraft(storage, "oversized"), {
+      category: "FRUITS",
+    });
   });
 });
