@@ -149,6 +149,7 @@ describe(
       assert.equal(fixedProduct.isPublished, true);
       assert.equal(fixedProduct.pricingType, "FIXED");
       assert.equal(fixedProduct.priceCOP, 2500);
+      assert.equal(fixedProduct.photoUrl, null);
       assert.ok(fixedProduct.availableQuantity.equals("2.5"));
 
       const negotiableProduct = await database.product.findUniqueOrThrow({
@@ -158,6 +159,7 @@ describe(
       assert.equal(negotiableProduct.pricingType, "NEGOTIABLE");
       assert.equal(negotiableProduct.priceCOP, null);
       assert.equal(negotiableProduct.priceReferenceEnabled, false);
+      assert.equal(negotiableProduct.photoUrl, null);
       assert.ok(negotiableProduct.availableQuantity.equals("4"));
     });
 

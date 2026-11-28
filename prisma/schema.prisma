@@ -150,6 +150,7 @@ model Product {
   unit                  String   @db.VarChar(30)
   priceCOP              Int?
   pricingType           ProductPricingType @default(FIXED)
+  photoUrl              String?  @db.VarChar(2048)
   municipality          String   @db.VarChar(100)
   isPublished           Boolean  @default(false)
   priceReferenceEnabled Boolean  @default(false)

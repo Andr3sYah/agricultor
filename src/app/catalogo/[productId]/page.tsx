@@ -26,6 +26,7 @@ import {
 } from "@/features/sellers/seller-profile";
 import { getPublicSellerOfferCondition } from "@/features/sellers/seller-contact";
 import { SellerPublicContact } from "@/features/sellers/seller-public-contact";
+import { ProductPhoto } from "@/features/catalog/product-photo";
 
 const metadataBase = new URL(
   process.env.VERCEL_PROJECT_PRODUCTION_URL
@@ -66,6 +67,7 @@ const getPublicProduct = cache(async (productId: string) => {
       reservedQuantity: true,
       unit: true,
       priceCOP: true,
+      photoUrl: true,
       pricingType: true,
       municipality: true,
     },
@@ -189,6 +191,12 @@ export default async function PublicProductPage({
           Producto publicado
         </p>
         <h1 className="mt-4 text-3xl font-semibold">{product.name}</h1>
+        <ProductPhoto
+          category={category}
+          photoUrl={product.photoUrl}
+          productName={product.name}
+          size="detail"
+        />
         {seller?.published && (
           <Link className="mt-2 inline-flex min-h-11 items-center break-words font-semibold text-emerald-900 underline" href={getSellerProfileHref(seller.id)}>
             Ver perfil de {seller.name}

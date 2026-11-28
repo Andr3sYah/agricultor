@@ -1,0 +1,2 @@
+ALTER TABLE "Product"
+ADD COLUMN "photoUrl" VARCHAR(2048);

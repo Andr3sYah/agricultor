@@ -141,6 +141,30 @@ describe("public catalog projection", () => {
     assert.equal("preciseAddress" in publicProduct, false);
   });
 
+  it("includes a public product photo but keeps unrelated private fields out", () => {
+    const [product] = getPublicProducts([
+      {
+        id: "public-yuca-id",
+        name: "Yuca",
+        category: "TUBERS",
+        availableQuantity: "4.5",
+        unit: "KG",
+        pricingType: "FIXED",
+        priceCOP: 3200,
+        municipality: "La Vega",
+        isPublished: true,
+        photoUrl:
+          "https://res.cloudinary.com/test-cloud/image/upload/v123/products/public-yuca-id/main.jpg",
+      },
+    ]);
+
+    assert.equal(
+      product.photoUrl,
+      "https://res.cloudinary.com/test-cloud/image/upload/v123/products/public-yuca-id/main.jpg",
+    );
+    assert.equal("ownerId" in product, false);
+  });
+
   it("builds Open Graph metadata from only the public product fields", () => {
     const privateProduct = {
       id: "shared-yuca",

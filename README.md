@@ -71,12 +71,16 @@ de solicitud no revela si el correo tiene una cuenta.
 
 `META_WEBHOOK_VERIFY_TOKEN` se usa para la verificación inicial del webhook de
 Meta. `META_APP_ID`, `META_APP_SECRET` y `META_GRAPH_API_VERSION` todavía no
-son consumidas por el código. Cloudinary tampoco está integrado: las variables
-`CLOUDINARY_API_SECRET`, `CLOUDINARY_CLOUD_NAME` y `CLOUDINARY_URL` no se usan,
-y `COUDINARY_API_KEY` parece tener una errata; no se debe configurar ni usar
-hasta implementar esa integración con el nombre correcto `CLOUDINARY_API_KEY`.
-`.env.example` enumera las variables aplicables sin valores. No se puede
-comprobar desde el repositorio cuáles variables están guardadas en Vercel.
+son consumidas por el código. La foto de producto es opcional: después de
+publicar una oferta, el vendedor puede subir una imagen JPG, PNG o WebP de hasta
+5 MB a Cloudinary. La carga firmada ocurre solo en el servidor; el catálogo
+guarda la URL segura de Cloudinary y la muestra en un marco contenido. Para
+habilitarla, configura `CLOUDINARY_URL` o las tres variables servidoras
+`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` y `CLOUDINARY_API_SECRET`.
+Nunca uses prefijos `NEXT_PUBLIC_` para estas credenciales. Si faltan, se
+informan los nombres necesarios y se puede seguir publicando sin foto.
+`.env.example` enumera las variables sin valores; no revela qué variables están
+guardadas en Vercel.
 
 El formulario público de reportes aplica una trampa honeypot, valida el origen y
 el tamaño del mensaje, y limita cada dirección IP a tres envíos cada diez
