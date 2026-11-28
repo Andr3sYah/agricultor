@@ -73,6 +73,8 @@ export default async function EditProductPage({
             pricingType: product.pricingType,
             priceCOP: product.priceCOP?.toString() ?? "",
             municipality: product.municipality,
+            photoUrl: product.photoUrl,
+            isPublished: product.isPublished,
           }}
         />
       </section>

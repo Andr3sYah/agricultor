@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createProduct, updateProduct, type ProductFormState } from "./product-actions";
+import { ProductPhotoUploader } from "./product-photo-uploader";
 import { PRODUCT_CATEGORIES, PRODUCT_UNITS } from "./product-validation";
 
 export type ProductFormValues = {
@@ -13,6 +14,8 @@ export type ProductFormValues = {
   pricingType: "FIXED" | "NEGOTIABLE";
   priceCOP: string;
   municipality: string;
+  photoUrl?: string | null;
+  isPublished?: boolean;
 };
 
 const initialState: ProductFormState = {};
@@ -35,10 +38,8 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
   const pricingType = selectedPricingType;
 
   return (
+    <>
     <form action={action} className="mt-6 space-y-5" id="formulario-producto">
-      <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-        Las fotos no están disponibles por ahora.
-      </p>
       {product?.id && <input name="productId" type="hidden" value={product.id} />}
       <div>
         <label className="block text-sm font-medium" htmlFor="name">
@@ -256,6 +257,9 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
         producto» para guardar y publicar la oferta en un solo paso. Para vender
         necesitas existencias y un perfil de vendedor listo para compartir contacto.
       </p>
+      <p className="text-xs text-slate-500">
+        Foto (opcional): puedes agregarla después de publicar; vender no depende de ella.
+      </p>
       {state.message && (
         <p
           className={
@@ -319,5 +323,29 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
         </div>
       )}
     </form>
+      {product?.id ? (
+        <ProductPhotoUploader
+          category={
+            PRODUCT_CATEGORIES.find(({ value }) => value === product.category)?.label ??
+            product.category
+          }
+          photoUploadEnabled={product.isPublished ?? false}
+          photoUrl={product.photoUrl}
+          productId={product.id}
+          productName={product.name}
+        />
+      ) : state.createdProductId ? (
+        <ProductPhotoUploader
+          category={
+            PRODUCT_CATEGORIES.find(({ value }) => value === values?.category)?.label ??
+            values?.category ??
+            "Producto"
+          }
+          photoUploadEnabled={state.createdProductPublished ?? false}
+          productId={state.createdProductId}
+          productName={values?.name ?? "Producto"}
+        />
+      ) : null}
+    </>
   );
 }

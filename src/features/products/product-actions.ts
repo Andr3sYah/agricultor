@@ -24,6 +24,12 @@ import {
   type ProductField,
   type ProductFieldErrors,
 } from "./product-validation";
+import {
+  getCloudinaryCredentials,
+  MAX_PRODUCT_PHOTO_BYTES,
+  uploadProductPhotoToCloudinary,
+  validateProductPhoto,
+} from "./product-photo-upload";
 
 export type ProductFormState = {
   ok?: boolean;
@@ -33,6 +39,12 @@ export type ProductFormState = {
   createdProductId?: string;
   createdProductPublished?: boolean;
   sellerProfileRequired?: boolean;
+};
+
+export type ProductPhotoUploadState = {
+  ok?: boolean;
+  message?: string;
+  photoUrl?: string;
 };
 
 function productData(data: {
@@ -137,6 +149,7 @@ export async function createProduct(
       : "Guardamos el producto en tu inventario privado; aún no es una oferta pública.",
     createdProductId: creation.productId,
     createdProductPublished: creation.published,
+    values: submittedValues(formData),
   };
 }
 
@@ -485,4 +498,88 @@ export async function setProductPublication(
     ok: true,
     message: isPublished ? "Publicamos el producto." : "Retiramos el producto.",
   };
+}
+
+export async function uploadProductPhoto(
+  _previousState: ProductPhotoUploadState,
+  formData: FormData,
+): Promise<ProductPhotoUploadState> {
+  const identity = await getCurrentIdentity();
+  if (!identity || !canManageProducts(identity.roles)) {
+    return { message: "Necesitas el perfil de productor para subir una foto." };
+  }
+
+  const productId = formData.get("productId");
+  if (typeof productId !== "string" || productId.length === 0) {
+    return { message: "No encontramos ese producto en tu cuenta." };
+  }
+
+  const product = await prisma.product.findFirst({
+    where: { id: productId, ownerId: identity.userId },
+    select: { id: true, isPublished: true },
+  });
+  if (!product) {
+    return { message: "No encontramos ese producto en tu cuenta." };
+  }
+  if (!product.isPublished) {
+    return {
+      message: "Publica la oferta antes de agregar una foto pública. Puedes vender sin foto.",
+    };
+  }
+
+  const submittedPhotos = formData.getAll("photo");
+  if (submittedPhotos.length !== 1) {
+    return {
+      message: submittedPhotos.length === 0
+        ? "Elige una foto antes de subirla."
+        : "Sube una sola foto por producto.",
+    };
+  }
+  const submittedPhoto = submittedPhotos[0];
+  const file = typeof submittedPhoto === "string" ? null : submittedPhoto;
+  if (!file) {
+    return { message: "Elige una foto antes de subirla." };
+  }
+  const validation = await validateProductPhoto(file);
+  if (!validation.ok) {
+    return {
+      message: validation.code === "too-large"
+        ? `La foto no puede superar ${MAX_PRODUCT_PHOTO_BYTES / (1024 * 1024)} MB.`
+        : "Usa una imagen JPG, PNG o WebP válida.",
+    };
+  }
+
+  const cloudinary = getCloudinaryCredentials();
+  if (!cloudinary.ok) {
+    return {
+      message: `No está configurada la carga de fotos (${cloudinary.missingVariables.join(", ")}). Puedes seguir usando la oferta sin foto.`,
+    };
+  }
+
+  const uploaded = await uploadProductPhotoToCloudinary({
+    productId: product.id,
+    file,
+    credentials: cloudinary.credentials,
+  });
+  if (!uploaded.ok) {
+    return {
+      message: uploaded.code === "network"
+        ? "No pudimos conectar con el servicio de fotos. La oferta sigue disponible; puedes volver a intentarlo."
+        : "El servicio de fotos rechazó la imagen. La oferta sigue disponible; puedes volver a intentarlo.",
+    };
+  }
+
+  const updated = await prisma.product.updateMany({
+    where: { id: product.id, ownerId: identity.userId, isPublished: true },
+    data: { photoUrl: uploaded.photoUrl },
+  });
+  if (updated.count !== 1) {
+    return { message: "No encontramos ese producto en tu cuenta." };
+  }
+
+  revalidatePath("/catalogo");
+  revalidatePath(getPublicProductHref(product.id));
+  revalidatePath("/mi-cuenta/productos");
+  revalidatePath(`/mi-cuenta/productos/${product.id}/editar`);
+  return { ok: true, message: "Subimos la foto del producto.", photoUrl: uploaded.photoUrl };
 }

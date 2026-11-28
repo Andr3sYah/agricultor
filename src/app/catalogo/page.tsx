@@ -21,6 +21,7 @@ import { getCurrentIdentity } from "@/lib/auth/server";
 import { SiteHeader } from "@/components/site-header";
 import { getPublicSellerOfferCondition } from "@/features/sellers/seller-contact";
 import { SellerPublicContact } from "@/features/sellers/seller-public-contact";
+import { ProductPhoto } from "@/features/catalog/product-photo";
 
 const copFormatter = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -97,6 +98,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       unit: true,
       pricingType: true,
       priceCOP: true,
+      photoUrl: true,
       municipality: true,
       isPublished: true,
       owner: {
@@ -411,21 +413,28 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                 className="flex flex-col rounded-3xl border border-border bg-surface p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6"
                 key={product.id}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <span className="inline-flex max-w-full rounded-full bg-surface-accent px-3 py-1 text-xs font-bold text-primary">
-                    {category}
-                  </span>
-                  <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${
-                      Number(product.availableQuantity) > 0
-                        ? "bg-[#e8f0e5] text-[#285632]"
-                        : "bg-[#f4eadb] text-[#764b1e]"
-                    }`}
-                  >
-                    {Number(product.availableQuantity) > 0 ? "Disponible" : "En reserva"}
-                  </span>
+                <div className="flex items-start gap-3">
+                  <ProductPhoto
+                    category={category}
+                    photoUrl={product.photoUrl}
+                    productName={product.name}
+                  />
+                  <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-2">
+                    <span className="inline-flex max-w-full break-words rounded-full bg-surface-accent px-3 py-1 text-xs font-bold text-primary">
+                      {category}
+                    </span>
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${
+                        Number(product.availableQuantity) > 0
+                          ? "bg-[#e8f0e5] text-[#285632]"
+                          : "bg-[#f4eadb] text-[#764b1e]"
+                      }`}
+                    >
+                      {Number(product.availableQuantity) > 0 ? "Disponible" : "En reserva"}
+                    </span>
+                  </div>
                 </div>
-                <h2 className="mt-3 text-xl font-bold leading-snug tracking-tight sm:text-2xl">
+                <h2 className="mt-3 break-words text-xl font-bold leading-snug tracking-tight sm:text-2xl">
                   <Link
                     className="inline-block min-h-6 max-w-full break-words align-middle underline-offset-4 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     href={getPublicProductHref(product.id, {

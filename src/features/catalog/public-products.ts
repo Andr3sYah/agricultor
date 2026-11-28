@@ -14,6 +14,7 @@ export type CatalogProductRecord = {
   unit: string;
   pricingType: "FIXED" | "NEGOTIABLE";
   priceCOP: number | null;
+  photoUrl?: string | null;
   municipality: string;
   isPublished: boolean;
 };
@@ -318,6 +319,7 @@ export function getPublicProducts(
         unit,
         pricingType,
         priceCOP,
+        photoUrl,
         municipality,
       }) => ({
         id,
@@ -327,6 +329,7 @@ export function getPublicProducts(
         unit,
         pricingType,
         priceCOP,
+        ...(photoUrl !== undefined ? { photoUrl } : {}),
         municipality,
       }),
     );

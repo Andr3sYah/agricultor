@@ -849,11 +849,29 @@ async function main(): Promise<void> {
       await expect(
         directSale.getByText("Oferta pública en el catálogo", { exact: true }),
       ).toBeVisible();
+      const photoUploader = producerPage.getByRole("region", {
+        name: `Foto opcional de ${directSaleName}`,
+      });
+      await expect(photoUploader).toContainText("JPG, PNG o WebP · máximo 5 MB");
+      await expect(photoUploader).toContainText("Puedes vender sin foto.");
+      await photoUploader.locator('input[name="photo"]').setInputFiles({
+        name: "not-an-image.png",
+        mimeType: "image/png",
+        buffer: Buffer.from("not an image"),
+      });
+      await photoUploader.getByRole("button", { name: "Subir foto" }).click();
+      await expect(photoUploader.getByRole("alert")).toContainText(
+        "Usa una imagen JPG, PNG o WebP válida.",
+      );
+      await expect(
+        directSale.getByText("Oferta pública en el catálogo", { exact: true }),
+      ).toBeVisible();
       const directSaleRecord = await database.product.findFirstOrThrow({
         where: { ownerId: producer.id, name: directSaleName },
       });
       assert.equal(directSaleRecord.isPublished, true);
       assert.equal(directSaleRecord.priceCOP, 3500);
+      assert.equal(directSaleRecord.photoUrl, null);
       assert.ok(directSaleRecord.availableQuantity.equals("6"));
       assert.equal(
         await database.product.count({
@@ -892,12 +910,48 @@ async function main(): Promise<void> {
       await publicCatalog.goto(`${baseURL}/catalogo?${new URLSearchParams({
         municipio: directSaleMunicipality,
       })}`);
-      await expect(
-        publicCatalog.getByRole("listitem").filter({ hasText: directSaleName }),
-      ).toContainText(/3\.500/);
+      await publicCatalog.setViewportSize({ width: 1024, height: 768 });
+      const directSaleCard = publicCatalog.getByRole("listitem").filter({
+        hasText: directSaleName,
+      });
+      await expect(directSaleCard).toContainText(/3\.500/);
+      const desktopCardBounds = await directSaleCard.boundingBox();
+      const desktopPhotoBounds = await directSaleCard
+        .getByRole("img", { name: `Sin foto de ${directSaleName}. Categoría: Tubérculos.` })
+        .boundingBox();
+      assert.ok(desktopCardBounds && desktopCardBounds.width > 280);
+      assert.deepEqual(
+        desktopPhotoBounds && {
+          width: desktopPhotoBounds.width,
+          height: desktopPhotoBounds.height,
+        },
+        { width: 64, height: 64 },
+      );
       await expect(
         publicCatalog.getByRole("listitem").filter({ hasText: negotiableSaleName }),
       ).toContainText("Consultar precio");
+      await publicCatalog.setViewportSize({ width: 320, height: 640 });
+      assert.equal(
+        await publicCatalog.locator("html").evaluate(
+          (root) => root.scrollWidth <= root.clientWidth,
+        ),
+        true,
+        "The offer cards should fit a 320px viewport without horizontal scrolling.",
+      );
+      await directSaleCard.getByRole("link", { name: directSaleName, exact: true }).click();
+      const detailPhoto = publicCatalog.getByRole("img", {
+        name: `Sin foto de ${directSaleName}. Categoría: Tubérculos.`,
+      });
+      const detailPhotoBounds = await detailPhoto.boundingBox();
+      assert.ok(detailPhotoBounds && detailPhotoBounds.width <= 288);
+      assert.ok(detailPhotoBounds && detailPhotoBounds.height <= 160);
+      assert.equal(
+        await publicCatalog.locator("html").evaluate(
+          (root) => root.scrollWidth <= root.clientWidth,
+        ),
+        true,
+        "The product detail should fit a 320px viewport without horizontal scrolling.",
+      );
       await publicCatalog.goto(harvestCatalogUrl);
       await publicCrop.getByRole("link", { name: harvestName, exact: true }).click();
       await publicCatalog.getByRole("link", { name: "Ver perfil de Distribución de prueba" }).click();
