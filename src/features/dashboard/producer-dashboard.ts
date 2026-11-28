@@ -2,7 +2,16 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import type { OrderStatus } from "@/generated/prisma/enums";
 import { canManageProducts, type ProductActor } from "@/features/products/product-access";
 
-type DashboardDatabase = Pick<PrismaClient, "product" | "order">;
+type DashboardDatabase = Pick<PrismaClient, "$queryRaw">;
+
+type DashboardCounts = {
+  totalProducts: bigint;
+  publishedProducts: bigint;
+  soldOutProducts: bigint;
+  pendingOrders: bigint;
+  acceptedOrders: bigint;
+  rejectedOrders: bigint;
+};
 
 export type ProducerDashboardSummary = {
   products: {
@@ -23,33 +32,54 @@ export async function getProducerDashboardSummary(
     return null;
   }
 
-  const [totalProducts, publishedProducts, soldOutProducts, orderGroups] =
-    await Promise.all([
-      database.product.count({
-        where: { ownerId: actor.userId },
-      }),
-      database.product.count({
-        where: { ownerId: actor.userId, isPublished: true },
-      }),
-      database.product.count({
-        where: { ownerId: actor.userId, availableQuantity: { equals: 0 } },
-      }),
-      database.order.groupBy({
-        by: ["status"],
-        where: { producerId: actor.userId },
-        _count: { _all: true },
-      }),
-    ]);
+  const [counts] = await database.$queryRaw<DashboardCounts[]>`
+    WITH product_counts AS (
+      SELECT
+        COUNT(*) AS "totalProducts",
+        COUNT(*) FILTER (WHERE "isPublished") AS "publishedProducts",
+        COUNT(*) FILTER (WHERE "availableQuantity" = 0) AS "soldOutProducts"
+      FROM "Product"
+      WHERE "ownerId" = ${actor.userId}
+    ),
+    order_counts AS (
+      SELECT
+        COUNT(*) FILTER (WHERE "status" = 'PENDING') AS "pendingOrders",
+        COUNT(*) FILTER (WHERE "status" = 'ACCEPTED') AS "acceptedOrders",
+        COUNT(*) FILTER (WHERE "status" = 'REJECTED') AS "rejectedOrders"
+      FROM "Order"
+      WHERE "producerId" = ${actor.userId}
+    )
+    SELECT * FROM product_counts CROSS JOIN order_counts
+  `;
+
+  if (!counts) {
+    throw new Error("No se pudieron cargar los conteos del panel de productor.");
+  }
+
+  const totalProducts = Number(counts.totalProducts);
+  const publishedProducts = Number(counts.publishedProducts);
+  const soldOutProducts = Number(counts.soldOutProducts);
+  const pendingOrders = Number(counts.pendingOrders);
+  const acceptedOrders = Number(counts.acceptedOrders);
+  const rejectedOrders = Number(counts.rejectedOrders);
+  if (
+    ![
+      totalProducts,
+      publishedProducts,
+      soldOutProducts,
+      pendingOrders,
+      acceptedOrders,
+      rejectedOrders,
+    ].every(Number.isSafeInteger)
+  ) {
+    throw new RangeError("Los conteos del panel exceden el rango numérico seguro.");
+  }
 
   const orders: Record<OrderStatus, number> = {
-    PENDING: 0,
-    ACCEPTED: 0,
-    REJECTED: 0,
+    PENDING: pendingOrders,
+    ACCEPTED: acceptedOrders,
+    REJECTED: rejectedOrders,
   };
-
-  for (const group of orderGroups) {
-    orders[group.status] = group._count._all;
-  }
 
   return {
     products: {

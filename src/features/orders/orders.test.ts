@@ -9,6 +9,11 @@ import {
   parseOrderDecision,
   validateOrderRequest,
 } from "./order-validation";
+import {
+  getOrderPagination,
+  ORDER_LIST_PAGE_SIZE,
+  parseOrderPage,
+} from "./order-pagination";
 
 describe("order request validation", () => {
   it("normalizes valid decimal quantities", () => {
@@ -82,6 +87,31 @@ describe("order permissions and transitions", () => {
       canRequestOrder({ userId: "trader-1", roles: ["TRADER"] }, "producer-1"),
       false,
     );
+  });
+
+  describe("order list pagination", () => {
+    it("uses a bounded page size and clamps requests past the last page", () => {
+      assert.deepEqual(getOrderPagination(ORDER_LIST_PAGE_SIZE * 2 + 1, 2), {
+        page: 2,
+        pageCount: 3,
+        skip: ORDER_LIST_PAGE_SIZE,
+        take: ORDER_LIST_PAGE_SIZE,
+      });
+      assert.deepEqual(getOrderPagination(0, 99), {
+        page: 1,
+        pageCount: 1,
+        skip: 0,
+        take: ORDER_LIST_PAGE_SIZE,
+      });
+      assert.equal(getOrderPagination(13, 99).page, 2);
+    });
+
+    it("rejects malformed, repeated, zero, and unsafe page values", () => {
+      for (const value of [undefined, "", "0", "-1", "1.5", ["2"], "9999999999"]) {
+        assert.equal(parseOrderPage(value), 1);
+      }
+      assert.equal(parseOrderPage("3"), 3);
+    });
   });
 
   it("allows only the owning producer to decide a pending order once", () => {

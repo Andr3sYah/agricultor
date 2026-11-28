@@ -2,15 +2,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCatalogPageHref, getPublicProductOrderHref } from "@/features/catalog/public-products";
 import { OrderCoordinationSummary } from "@/features/orders/order-coordination-summary";
-import { isDeliveryConfirmationAvailable, isOrderDeliveryAvailable } from "@/features/orders/order-delivery";
+import { getOptionalOrderSchemaAvailability } from "@/features/orders/order-schema";
+import {
+  getOrderPagination,
+  parseOrderPage,
+} from "@/features/orders/order-pagination";
 import { OrderDeliveryConfirmationForm } from "@/features/orders/order-delivery-confirmation-form";
-import { isOrderReceiptAvailable } from "@/features/orders/order-receipt";
 import { OrderRatingForm, OrderReceiptForm } from "@/features/orders/order-receipt-forms";
 import { ExternalPaymentForm } from "@/features/orders/external-payment-form";
-import { isExternalPaymentAvailable, isPaymentEventAvailable, isPaymentReceiptAvailable, paymentLabels } from "@/features/orders/external-payment";
+import { paymentLabels } from "@/features/orders/external-payment";
 import { PaymentReceiptForm } from "@/features/orders/payment-receipt-form";
 import { OrderDeliveryForm } from "@/features/orders/order-delivery-form";
-import { isOrderSellerContactAvailable } from "@/features/orders/order-seller-contact";
 import { OrderSellerContactForm } from "@/features/orders/order-seller-contact-form";
 import { OrderDecisionForm } from "@/features/orders/order-decision-form";
 import { PRODUCT_UNITS } from "@/features/products/product-validation";
@@ -72,12 +74,17 @@ export default async function OrdersPage({
   const buyerReference = typeof params.referencia === "string"
     ? params.referencia.trim().slice(0, 100).replaceAll("\0", "")
     : "";
-  const producerStatus = params.respuesta === "ACCEPTED" || params.respuesta === "REJECTED"
-    ? params.respuesta
-    : undefined;
+  const producerStatus: "ACCEPTED" | "REJECTED" | undefined = params.respuesta === "ACCEPTED"
+    ? "ACCEPTED"
+    : params.respuesta === "REJECTED"
+      ? "REJECTED"
+      : undefined;
   const producerProduct = typeof params.producto === "string"
-    ? params.producto.trim().slice(0, 100)
+    ? params.producto.trim().slice(0, 100).replaceAll("\0", "")
     : "";
+  const buyerRequestedPage = parseOrderPage(params.compradorPagina);
+  const pendingProducerRequestedPage = parseOrderPage(params.productorPendientePagina);
+  const answeredProducerRequestedPage = parseOrderPage(params.productorRespondidoPagina);
   const buyerFilters = new URLSearchParams({
     ...(isBuyer && buyerStatus ? { estado: buyerStatus } : {}),
     ...(isBuyer && buyerReference ? { referencia: buyerReference } : {}),
@@ -89,58 +96,169 @@ export default async function OrdersPage({
   const resetBuyerHref = `/mi-cuenta/pedidos${producerFilters.size ? `?${producerFilters}` : ""}#solicitudes-enviadas`;
   const resetProducerHref = `/mi-cuenta/pedidos${buyerFilters.size ? `?${buyerFilters}` : ""}#pedidos-respondidos`;
 
-  const [buyerOrders, producerOrders] = await Promise.all([
-    isBuyer
-      ? prisma.order.findMany({
-          where: {
-            buyerId: identity.userId,
-            ...(buyerStatus ? { status: buyerStatus } : {}),
-            ...(buyerReference ? { id: buyerReference } : {}),
-          },
-          orderBy: { createdAt: "desc" },
-          include: {
-            product: {
-              select: { id: true, isPublished: true, availableQuantity: true },
-            },
-            history: {
-              orderBy: { createdAt: "asc" },
-              select: {
-                id: true,
-                fromStatus: true,
-                toStatus: true,
-                createdAt: true,
+  const buyerWhere = {
+    buyerId: identity.userId,
+    ...(buyerStatus ? { status: buyerStatus } : {}),
+    ...(buyerReference ? { id: buyerReference } : {}),
+  };
+  const producerWhere = { producerId: identity.userId };
+  const producerAnsweredWhere = {
+    ...producerWhere,
+    status: producerStatus ?? { not: "PENDING" as const },
+    ...(producerProduct
+      ? {
+          OR: [
+            {
+              id: {
+                equals: producerProduct,
+                mode: "insensitive" as const,
               },
             },
-            notifications: {
-              select: { type: true, status: true },
-            },
-          },
-        })
-      : Promise.resolve([]),
-    isProducer
-      ? prisma.order.findMany({
-          where: { producerId: identity.userId },
-          orderBy: { createdAt: "desc" },
-          include: {
-            history: {
-              orderBy: { createdAt: "asc" },
-              select: {
-                id: true,
-                fromStatus: true,
-                toStatus: true,
-                createdAt: true,
+            {
+              productName: {
+                contains: producerProduct,
+                mode: "insensitive" as const,
               },
             },
-          },
-        })
-      : Promise.resolve([]),
-  ]);
+          ],
+        }
+      : {}),
+  } satisfies Prisma.OrderWhereInput;
+  const hasAnsweredFilters = Boolean(producerStatus || producerProduct);
 
-  const acceptedOrderIds = [...buyerOrders, ...producerOrders]
-    .filter(({ status }) => status === "ACCEPTED").map(({ id }) => id);
-  const [contactsAvailable, deliveryAvailable, confirmationAvailable, receiptAvailable, paymentAvailable, paymentReceiptAvailable, paymentEventAvailable] = acceptedOrderIds.length > 0
-    ? await Promise.all([isOrderSellerContactAvailable(), isOrderDeliveryAvailable(), isDeliveryConfirmationAvailable(), isOrderReceiptAvailable(), isExternalPaymentAvailable(), isPaymentReceiptAvailable(), isPaymentEventAvailable()])
-    : [false, false, false, false, false, false, false];
+  const [buyerTotal, producerStatusGroups, filteredAnsweredTotal] =
+    await Promise.all([
+      isBuyer ? prisma.order.count({ where: buyerWhere }) : Promise.resolve(0),
+      isProducer
+        ? prisma.order.groupBy({
+            by: ["status"],
+            where: producerWhere,
+            _count: { _all: true },
+          })
+        : Promise.resolve([]),
+      isProducer && hasAnsweredFilters
+        ? prisma.order.count({ where: producerAnsweredWhere })
+        : Promise.resolve(0),
+    ]);
+
+  const producerTotals: Record<OrderStatus, number> = {
+    PENDING: 0,
+    ACCEPTED: 0,
+    REJECTED: 0,
+  };
+  for (const group of producerStatusGroups) {
+    producerTotals[group.status] = group._count._all;
+  }
+  const pendingProducerTotal = producerTotals.PENDING;
+  const answeredProducerTotal = hasAnsweredFilters
+    ? filteredAnsweredTotal
+    : producerTotals.ACCEPTED + producerTotals.REJECTED;
+  const producerTotal = Object.values(producerTotals).reduce(
+    (total, count) => total + count,
+    0,
+  );
+  const buyerPagination = getOrderPagination(buyerTotal, buyerRequestedPage);
+  const pendingProducerPagination = getOrderPagination(
+    pendingProducerTotal,
+    pendingProducerRequestedPage,
+  );
+  const answeredProducerPagination = getOrderPagination(
+    answeredProducerTotal,
+    answeredProducerRequestedPage,
+  );
+
+  const [buyerOrders, pendingProducerOrders, answeredProducerOrders] =
+    await Promise.all([
+      isBuyer
+        ? prisma.order.findMany({
+            where: buyerWhere,
+            skip: buyerPagination.skip,
+            take: buyerPagination.take,
+            orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+            include: {
+              product: {
+                select: { id: true, isPublished: true, availableQuantity: true },
+              },
+              history: {
+                orderBy: { createdAt: "asc" },
+                select: {
+                  id: true,
+                  fromStatus: true,
+                  toStatus: true,
+                  createdAt: true,
+                },
+              },
+              notifications: {
+                select: { type: true, status: true },
+              },
+            },
+          })
+        : Promise.resolve([]),
+      isProducer
+        ? prisma.order.findMany({
+            where: { ...producerWhere, status: "PENDING" },
+            skip: pendingProducerPagination.skip,
+            take: pendingProducerPagination.take,
+            orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+            include: {
+              history: {
+                orderBy: { createdAt: "asc" },
+                select: {
+                  id: true,
+                  fromStatus: true,
+                  toStatus: true,
+                  createdAt: true,
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
+      isProducer
+        ? prisma.order.findMany({
+            where: producerAnsweredWhere,
+            skip: answeredProducerPagination.skip,
+            take: answeredProducerPagination.take,
+            orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+            include: {
+              history: {
+                orderBy: { createdAt: "asc" },
+                select: {
+                  id: true,
+                  fromStatus: true,
+                  toStatus: true,
+                  createdAt: true,
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+
+  const acceptedOrderIds = [...new Set(
+    [...buyerOrders, ...pendingProducerOrders, ...answeredProducerOrders]
+      .filter(({ status }) => status === "ACCEPTED")
+      .map(({ id }) => id),
+  )];
+  const schemaAvailability = acceptedOrderIds.length > 0
+    ? await getOptionalOrderSchemaAvailability()
+    : {
+        contacts: false,
+        delivery: false,
+        confirmation: false,
+        receipt: false,
+        externalPayment: false,
+        paymentReceipt: false,
+        paymentEvent: false,
+      };
+  const {
+    contacts: contactsAvailable,
+    delivery: deliveryAvailable,
+    confirmation: confirmationAvailable,
+    receipt: receiptAvailable,
+    externalPayment: paymentAvailable,
+    paymentReceipt: paymentReceiptAvailable,
+    paymentEvent: paymentEventAvailable,
+  } = schemaAvailability;
   const [contacts, deliveries, receipts, paymentReceipts, paymentEvents] = await Promise.all([
     contactsAvailable ? prisma.orderSellerContact.findMany({
       where: { orderId: { in: acceptedOrderIds } },
@@ -186,24 +304,82 @@ export default async function OrdersPage({
   const deliveryByOrder = new Map(deliveries.map((delivery) => [delivery.orderId, delivery]));
   const receiptByOrder = new Map(receipts.map((receipt) => [receipt.orderId, receipt]));
   const contactByOrder = new Map(contacts.map(({ orderId, whatsapp }) => [orderId, whatsapp]));
-  const pendingProducerOrders = producerOrders.filter(({ status }) => status === "PENDING");
-  const answeredProducerOrders = producerOrders.filter(({ status }) => status !== "PENDING");
-  const search = producerProduct.toLocaleLowerCase("es-CO");
-  const referenceMatch = search
-    ? answeredProducerOrders.find(({ id }) => id.toLowerCase() === search)
-    : undefined;
-  const visibleAnsweredOrders = (referenceMatch ? [referenceMatch] : answeredProducerOrders)
-    .filter(({ status, productName }) =>
-      (!producerStatus || status === producerStatus) &&
-      (referenceMatch || !search || productName.toLocaleLowerCase("es-CO").includes(search)),
+  function getPageHref(
+    parameter: string,
+    page: number,
+    anchor: string,
+  ): string {
+    const query = new URLSearchParams(buyerFilters);
+    producerFilters.forEach((value, key) => query.set(key, value));
+    if (buyerPagination.page > 1 && parameter !== "compradorPagina") {
+      query.set("compradorPagina", String(buyerPagination.page));
+    }
+    if (
+      pendingProducerPagination.page > 1 &&
+      parameter !== "productorPendientePagina"
+    ) {
+      query.set(
+        "productorPendientePagina",
+        String(pendingProducerPagination.page),
+      );
+    }
+    if (
+      answeredProducerPagination.page > 1 &&
+      parameter !== "productorRespondidoPagina"
+    ) {
+      query.set(
+        "productorRespondidoPagina",
+        String(answeredProducerPagination.page),
+      );
+    }
+    if (page > 1) query.set(parameter, String(page));
+    return `/mi-cuenta/pedidos${query.size ? `?${query}` : ""}#${anchor}`;
+  }
+
+  function pageNavigation(
+    pagination: ReturnType<typeof getOrderPagination>,
+    parameter: string,
+    anchor: string,
+    label: string,
+  ) {
+    if (pagination.pageCount <= 1) return null;
+    return (
+      <nav aria-label={label} className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+        {pagination.page > 1 && (
+          <Link
+            className="inline-flex min-h-11 items-center font-semibold text-emerald-900 underline"
+            href={getPageHref(parameter, pagination.page - 1, anchor)}
+          >
+            ← Anterior
+          </Link>
+        )}
+        <span aria-current="page">
+          Página {pagination.page} de {pagination.pageCount}
+        </span>
+        {pagination.page < pagination.pageCount && (
+          <Link
+            className="inline-flex min-h-11 items-center font-semibold text-emerald-900 underline"
+            href={getPageHref(parameter, pagination.page + 1, anchor)}
+          >
+            Siguiente →
+          </Link>
+        )}
+      </nav>
     );
+  }
 
   function orderCard(
-    order: (typeof buyerOrders)[number] | (typeof producerOrders)[number],
+    order:
+      | (typeof buyerOrders)[number]
+      | (typeof pendingProducerOrders)[number]
+      | (typeof answeredProducerOrders)[number],
     producerView: boolean,
   ) {
     const ProductHeading = producerView ? "h4" : "h3";
     const TrackingHeading = producerView ? "h5" : "h4";
+    if (!("history" in order)) {
+      throw new Error("El pedido no incluye su historial de estado.");
+    }
     const decisionEvent =
       order.status === "PENDING"
         ? null
@@ -636,6 +812,12 @@ export default async function OrdersPage({
               {buyerOrders.map((order) => orderCard(order, false))}
             </ul>
           )}
+          {pageNavigation(
+            buyerPagination,
+            "compradorPagina",
+            "solicitudes-enviadas",
+            "Paginación de solicitudes enviadas",
+          )}
         </section>
       )}
       {isProducer && (
@@ -648,7 +830,7 @@ export default async function OrdersPage({
           <h2 className="text-2xl font-semibold" id="producer-orders-title">
             Solicitudes recibidas
           </h2>
-          {producerOrders.length === 0 ? (
+          {producerTotal === 0 ? (
             <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:p-5">
               <p className="text-slate-700">
                 Aún no has recibido pedidos. Revisa tus productos publicados
@@ -681,8 +863,14 @@ export default async function OrdersPage({
                     No tienes solicitudes por responder.
                   </p>
                 )}
+                {pageNavigation(
+                  pendingProducerPagination,
+                  "productorPendientePagina",
+                  "pedidos-por-responder",
+                  "Paginación de solicitudes por responder",
+                )}
               </section>
-              {answeredProducerOrders.length > 0 && (
+              {(answeredProducerTotal > 0 || hasAnsweredFilters) && (
                 <section
                   aria-labelledby="answered-producer-orders-title"
                   className="scroll-mt-4"
@@ -695,7 +883,7 @@ export default async function OrdersPage({
                   <Link className="mt-2 flex min-h-11 w-fit items-center font-semibold text-emerald-900 underline" href="/mi-cuenta/pedidos/despacho">
                     Ver cantidades para despacho
                   </Link>
-                  {answeredProducerOrders.some(({ status }) => status === "ACCEPTED") && (
+                  {producerTotals.ACCEPTED > 0 && (
                     <a
                       className="mt-2 inline-flex min-h-11 items-center font-semibold text-emerald-900 underline underline-offset-4"
                       href="/mi-cuenta/pedidos/aceptados.csv"
@@ -704,7 +892,7 @@ export default async function OrdersPage({
                       Descargar todos los pedidos aceptados (CSV)
                     </a>
                   )}
-                  {answeredProducerOrders.some(({ status }) => status === "ACCEPTED") && (
+                  {producerTotals.ACCEPTED > 0 && (
                     <form action="/mi-cuenta/pedidos/aceptados.csv" method="get" className="mt-2 rounded-lg border border-slate-200 p-3">
                       <fieldset>
                         <legend className="font-medium">Descargar por fecha de aceptación</legend>
@@ -781,9 +969,9 @@ export default async function OrdersPage({
                       );
                     })}
                   </nav>
-                  {visibleAnsweredOrders.length > 0 ? (
+                  {answeredProducerOrders.length > 0 ? (
                     <ul className="mt-3 space-y-4">
-                      {visibleAnsweredOrders.map((order) => orderCard(order, true))}
+                      {answeredProducerOrders.map((order) => orderCard(order, true))}
                     </ul>
                   ) : (
                     <p className="mt-3 text-sm text-slate-700">
@@ -791,6 +979,12 @@ export default async function OrdersPage({
                         ? "No encontramos solicitudes respondidas con esos filtros."
                         : "No tienes solicitudes con esta respuesta."}
                     </p>
+                  )}
+                  {pageNavigation(
+                    answeredProducerPagination,
+                    "productorRespondidoPagina",
+                    "pedidos-respondidos",
+                    "Paginación de solicitudes respondidas",
                   )}
                 </section>
               )}

@@ -10,6 +10,7 @@ import {
   getPublicProducts,
   parseCatalogFilters,
 } from "@/features/catalog/public-products";
+import { getPublicCatalogMunicipalities } from "@/features/catalog/public-municipalities";
 import { FavoriteControl } from "@/features/favorites/favorite-control";
 import { ProductQuantityEstimate } from "@/features/catalog/product-quantity-estimate";
 import {
@@ -19,7 +20,6 @@ import {
 import { prisma } from "@/lib/db";
 import { getCurrentIdentity } from "@/lib/auth/server";
 import { SiteHeader } from "@/components/site-header";
-import { getPublicSellerOfferCondition } from "@/features/sellers/seller-contact";
 import { SellerPublicContact } from "@/features/sellers/seller-public-contact";
 import { ProductPhoto } from "@/features/catalog/product-photo";
 
@@ -57,21 +57,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     typeof params.precioMin === "string" ? params.precioMin.trim().slice(0, 20) : "";
   const maximumPriceInput =
     typeof params.precioMax === "string" ? params.precioMax.trim().slice(0, 20) : "";
-  const municipalityRows = await prisma.product.findMany({
-    where: {
-      isPublished: true,
-      ...getPublicSellerOfferCondition(),
-      OR: [
-        { availableQuantity: { gt: 0 } },
-        { reservedQuantity: { gt: 0 } },
-      ],
-      municipality: { not: "" },
-    },
-    distinct: ["municipality"],
-    select: { municipality: true },
-    orderBy: { municipality: "asc" },
-  });
-  const municipalities = municipalityRows.map(({ municipality }) => municipality);
+  const municipalities = await getPublicCatalogMunicipalities();
   const hasFilters = Boolean(
     filters.name ||
     filters.category ||
