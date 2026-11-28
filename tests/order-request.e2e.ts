@@ -973,14 +973,22 @@ async function main(): Promise<void> {
         true,
         "The offer cards should fit a 320px viewport without horizontal scrolling.",
       );
-      await directSaleCard.getByRole("link", { name: directSaleName, exact: true }).click();
-      const detailPhoto = publicCatalog.getByRole("img", {
+      const directSaleLink = directSaleCard.getByRole("link", { name: directSaleName, exact: true });
+      const directSaleHref = await directSaleLink.getAttribute("href");
+      assert.ok(directSaleHref);
+      await directSaleLink.click();
+      await expect(publicCatalog).toHaveURL(new URL(directSaleHref, baseURL).href);
+      const directSaleDetail = publicCatalog.getByRole("article").filter({
+        has: publicCatalog.getByRole("heading", { name: directSaleName, exact: true }),
+      });
+      const detailPhoto = directSaleDetail.getByRole("img", {
         name: `Sin foto de ${directSaleName}. Categoría: Tubérculos.`,
       });
       await expect(detailPhoto).toBeVisible();
-      const detailPhotoBounds = await detailPhoto.boundingBox();
-      assert.ok(detailPhotoBounds && detailPhotoBounds.width <= 288);
-      assert.ok(detailPhotoBounds && detailPhotoBounds.height <= 160);
+      await expect.poll(async () => {
+        const bounds = await detailPhoto.boundingBox({ timeout: 1000 }).catch(() => null);
+        return bounds !== null && bounds.width <= 288 && bounds.height <= 160;
+      }, { message: "The product detail photo should fit within 288 × 160px." }).toBe(true);
       assert.equal(
         await publicCatalog.locator("html").evaluate(
           (root) => root.scrollWidth <= root.clientWidth,
