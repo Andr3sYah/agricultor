@@ -777,10 +777,11 @@ async function main(): Promise<void> {
         `${baseURL}/mi-cuenta/perfil-vendedor?returnTo=%2Fmi-cuenta%2Fproductos%3Fintent%3Dsell`,
       );
       await producerPage.getByLabel("Nombre del vendedor o negocio").fill("Distribución de prueba");
-      await producerPage.getByLabel("Departamento").selectOption("Antioquia");
-      await producerPage.getByLabel("Municipio", { exact: true }).selectOption(municipality);
+      await producerPage.getByRole("combobox", { name: "Departamento", exact: true }).selectOption("Antioquia");
+      await producerPage.getByRole("combobox", { name: "Municipio", exact: true }).selectOption(municipality);
       await producerPage.getByLabel("Teléfono de contacto").fill("3001234567");
       await producerPage.getByLabel("Correo de contacto").fill(producerEmail);
+      await producerPage.getByText("Más opciones del perfil", { exact: true }).click();
       await producerPage.getByLabel("Descripción").fill("Distribuimos papa y hortalizas.");
       await producerPage
         .getByRole("checkbox", { name: "Acepto publicar mi teléfono y correo para recibir consultas de compradores." })
@@ -854,6 +855,7 @@ async function main(): Promise<void> {
       ).toBeVisible();
       const publicCatalog = await browser.newPage();
       const harvestCatalogUrl = `${baseURL}/catalogo?${new URLSearchParams({
+        producto: harvestName,
         municipio: harvestMunicipality,
       })}`;
       await publicCatalog.goto(harvestCatalogUrl);
@@ -975,6 +977,7 @@ async function main(): Promise<void> {
       const detailPhoto = publicCatalog.getByRole("img", {
         name: `Sin foto de ${directSaleName}. Categoría: Tubérculos.`,
       });
+      await expect(detailPhoto).toBeVisible();
       const detailPhotoBounds = await detailPhoto.boundingBox();
       assert.ok(detailPhotoBounds && detailPhotoBounds.width <= 288);
       assert.ok(detailPhotoBounds && detailPhotoBounds.height <= 160);
@@ -993,7 +996,7 @@ async function main(): Promise<void> {
       await expect(publicCatalog.getByRole("link", { name: harvestName })).toBeVisible();
       const publicProfileUrl = publicCatalog.url();
       await publicCatalog.goto(harvestCatalogUrl);
-      await publicCatalog.getByLabel("Nombre del producto").fill("pApA");
+      await publicCatalog.getByLabel("Nombre del producto").fill(`pApA E2E ${suffix}`);
       await publicCatalog.getByLabel("Municipio").fill("");
       await publicCatalog.getByRole("button", { name: "Buscar", exact: true }).click();
       await expect(publicCatalog.getByText("1 oferta encontrada", { exact: true })).toBeVisible();
@@ -1155,6 +1158,12 @@ async function main(): Promise<void> {
         data: { email, password: newPassword },
       });
       assert.equal(signin.ok(), true, `Signin failed: ${await signin.text()}`);
+
+      // The catalog fixture owns this offer until the signed-in seller finishes setting up their profile.
+      await database.product.update({
+        where: { id: product.id },
+        data: { ownerId: producer.id },
+      });
 
       const context = await browser.newContext({
         viewport: { width: 320, height: 640 },
@@ -1476,7 +1485,7 @@ async function main(): Promise<void> {
         where: { orderId: acceptedOrder.id },
         select: { phone: true },
       });
-      assert.equal(savedContact.phone, "573000000000");
+      assert.equal(savedContact.phone, "573001234567");
       await expect(answeredProducerRequests.getByText(acceptedOrder.id, { exact: true })).toBeVisible();
       assert.ok(summary.includes(`Referencia: ${acceptedOrder.id}\n`));
       const acceptance = acceptedOrder.history.find(
@@ -1571,9 +1580,9 @@ async function main(): Promise<void> {
       await ratedProfile.close();
       await page.getByText("Coordinar entrega", { exact: true }).click();
       const whatsapp = page.getByRole("link", { name: "Escribir por WhatsApp" });
-      await expect(whatsapp).toHaveAttribute("href", /^https:\/\/wa\.me\/573000000000\?text=/);
+      await expect(whatsapp).toHaveAttribute("href", /^https:\/\/wa\.me\/573001234567\?text=/);
       assert.ok((await whatsapp.getAttribute("href"))?.includes(acceptedOrder.id));
-      await expect(page.getByRole("link", { name: "Llamar al vendedor" })).toHaveAttribute("href", "tel:+573000000000");
+      await expect(page.getByRole("link", { name: "Llamar al vendedor" })).toHaveAttribute("href", "tel:+573001234567");
       await expect(page.getByText(acceptedOrder.id, { exact: true })).toBeVisible();
       await expect(page.getByRole("textbox", { name: "Resumen del pedido" })).toHaveValue(summary);
       assert.match(summary, /Precio por unidad al solicitar: \$\s*1\.250 COP/);

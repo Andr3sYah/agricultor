@@ -28,8 +28,8 @@ function ColombiaLocationFields({
   return (
     <fieldset className="space-y-3">
       <legend className="font-medium">Ubicación</legend>
-      <label className="block font-medium" htmlFor="department">
-        Departamento
+      <div>
+        <label className="block font-medium" htmlFor="department">Departamento</label>
         <select
           className={fieldClass}
           id="department"
@@ -49,9 +49,9 @@ function ColombiaLocationFields({
             </option>
           ))}
         </select>
-      </label>
-      <label className="block font-medium" htmlFor="municipality">
-        Municipio
+      </div>
+      <div>
+        <label className="block font-medium" htmlFor="municipality">Municipio</label>
         <select
           className={fieldClass}
           disabled={!department}
@@ -70,7 +70,7 @@ function ColombiaLocationFields({
             </option>
           ))}
         </select>
-      </label>
+      </div>
       {profile?.municipality && !savedLocation && (
         <p className="text-sm text-slate-600">
           Conservamos tu ubicación anterior ({profile.municipality}). Elige su departamento y municipio para actualizarla.
