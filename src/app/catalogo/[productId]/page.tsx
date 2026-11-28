@@ -24,7 +24,10 @@ import {
   getSellerProfileHref,
   isSellerProfileAvailable,
 } from "@/features/sellers/seller-profile";
-import { getPublicSellerOfferCondition } from "@/features/sellers/seller-contact";
+import {
+  getPublicSellerOfferCondition,
+  PUBLIC_SELLER_CONTACT_CONDITION,
+} from "@/features/sellers/seller-contact";
 import { SellerPublicContact } from "@/features/sellers/seller-public-contact";
 import { ProductPhoto } from "@/features/catalog/product-photo";
 
@@ -133,12 +136,7 @@ export default async function PublicProductPage({
     where: {
       ownerId: product.ownerId,
       owner: { userRoles: { some: { role: "PRODUCER" } } },
-      neighborhood: { not: null },
-      publicContactConsentAt: { not: null },
-      phone: { not: null },
-      phonePublic: true,
-      email: { not: null },
-      emailPublic: true,
+      ...PUBLIC_SELLER_CONTACT_CONDITION,
     },
     select: {
       id: true,

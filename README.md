@@ -152,18 +152,21 @@ migración `20261124120000_product_price_audit_and_reference_consent`.
 
 El perfil comercial público requiere la migración
 `20261120030000_seller_profile`. Cada vendedor decide si lo publica. Los
-campos de contacto por canal y sus permisos de visibilidad requieren la
+campos de contacto y sus permisos de visibilidad requieren la
 migración `20261125193000_seller_profile_contact_opt_in`; son privados por
 defecto. La migración `20261127100000_public_seller_contacts` agrega el barrio
-aproximado y el registro de aceptación explícita para publicar celular y correo.
+aproximado y el registro de aceptación explícita para publicar teléfono y correo.
 No completa datos de vendedores existentes y retira del catálogo las ofertas ya
 publicadas hasta que cada vendedor complete y acepte estos datos; después debe
 volver a publicar sus ofertas. Los datos de contacto que anteriormente se
 mantuvieron privados no se prellenan ni se publican automáticamente.
 
-La opción de compartir WhatsApp en pedidos aceptados requiere aplicar en Neon
-la migración `20261120000000_order_seller_contact`. Hasta entonces, sigue
-disponible el resumen para copiar y coordinar la entrega.
+La opción de compartir el teléfono de contacto con el comprador de un pedido
+aceptado requiere aplicar en Neon la migración
+`20261120000000_order_seller_contact`. Hasta entonces, sigue
+disponible el resumen para copiar y coordinar la entrega. Se reutiliza el número
+guardado en el perfil; los campos antiguos de WhatsApp se conservan para leer
+perfiles existentes, pero ya no se editan por separado.
 Los datos acordados de entrega requieren la migración
 `20261120010000_order_delivery_details`.
 La confirmación del comprador requiere
@@ -193,10 +196,10 @@ Los productores administran sus productos y pueden publicarlos explícitamente.
 El catálogo público conserva visibles las ofertas publicadas con inventario
 disponible o reservado que tengan contacto y ubicación aproximada confirmados;
 si todo está reservado, no se aceptan nuevas solicitudes. En cada oferta se
-muestran el celular, correo y barrio/vereda y municipio, solo después de la
-aceptación explícita del productor. Una ubicación exacta es opcional, queda
-privada por defecto y solo se publica con una aceptación independiente e
-informada; requiere la migración
+muestran un teléfono de contacto, correo y barrio/vereda y municipio, solo
+después de la aceptación explícita del productor. El teléfono se usa para
+llamadas y WhatsApp. Una ubicación exacta es opcional, queda privada por defecto
+y solo se publica con una aceptación independiente e informada; requiere la migración
 `20261127113000_seller_exact_location_opt_in`. Sin esa aceptación se muestra
 solo el barrio/vereda y municipio. La ubicación de entrega de cada pedido es
 independiente y permanece privada para comprador y vendedor autorizados.

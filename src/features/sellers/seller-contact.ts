@@ -1,8 +1,8 @@
 export function normalizeSellerPhone(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  const normalized = value.trim().replace(/[ ()-]/g, "");
+  const normalized = value.trim().replace(/[ ().-]/g, "");
   if (!normalized) return null;
-  const number = normalized.replace(/^\+?57(?=3\d{9}$)/, "");
+  const number = normalized.replace(/^(?:\+57|57|0057)(?=3\d{9}$)/, "");
   return /^3\d{9}$/.test(number) ? `57${number}` : null;
 }
 
@@ -40,23 +40,6 @@ export function normalizeSellerWhatsappLink(value: unknown): string | null {
     phone = queryPhone && /^573\d{9}$/.test(queryPhone) ? queryPhone : null;
   }
   return phone ? `https://wa.me/${phone}` : null;
-}
-
-export function normalizeSellerWhatsappChoice(
-  mode: unknown,
-  phone: unknown,
-  link: unknown,
-): { whatsapp: string | null; whatsappLink: string | null } | null {
-  if (mode === "PHONE") return { whatsapp: null, whatsappLink: null };
-  if (mode === "OTHER_PHONE") {
-    const whatsapp = normalizeSellerPhone(phone);
-    return whatsapp ? { whatsapp, whatsappLink: null } : null;
-  }
-  if (mode === "LINK") {
-    const whatsappLink = normalizeSellerWhatsappLink(link);
-    return whatsappLink ? { whatsapp: null, whatsappLink } : null;
-  }
-  return null;
 }
 
 export function normalizeSellerEmail(value: unknown): string | null {
@@ -105,18 +88,12 @@ export function normalizeRequiredSellerContact(input: {
 export function getSellerContactVisibility(
   form: Pick<FormData, "get">,
   contacts: {
-    whatsapp: string | null;
-    whatsappLink?: string | null;
     phone: string | null;
     email: string | null;
   },
 ) {
   const publishContacts = form.get("publishContacts") === "on";
   return {
-    whatsappPublic: Boolean(
-      (contacts.whatsapp || contacts.whatsappLink || contacts.phone) &&
-      form.get("whatsappPublic") === "on",
-    ),
     phonePublic: Boolean(contacts.phone && publishContacts),
     emailPublic: Boolean(contacts.email && publishContacts),
   };
@@ -134,10 +111,19 @@ export function getSellerExactLocationVisibility(
 export const PUBLIC_SELLER_CONTACT_CONDITION = {
   neighborhood: { not: null },
   publicContactConsentAt: { not: null },
-  phone: { not: null },
-  phonePublic: true,
   email: { not: null },
   emailPublic: true,
+  OR: [
+    { phone: { not: null }, phonePublic: true },
+    {
+      whatsappPublic: true,
+      OR: [
+        { whatsapp: { not: null } },
+        { whatsappLink: { not: null } },
+        { phone: { not: null } },
+      ],
+    },
+  ],
 };
 
 export function getPublicSellerOfferCondition() {
@@ -168,11 +154,31 @@ export type SellerPublicContactProfile = {
   publicContactConsentAt: Date | null;
 };
 
+function getLegacyWhatsappPhone(profile: Pick<
+  SellerPublicContactProfile,
+  "phone" | "whatsapp" | "whatsappLink" | "whatsappPublic"
+>) {
+  if (!profile.whatsappPublic) return null;
+  return normalizeSellerPhone(profile.whatsapp) ??
+    (profile.whatsappLink
+      ? normalizeSellerWhatsappLink(profile.whatsappLink)?.slice("https://wa.me/".length) ?? null
+      : normalizeSellerPhone(profile.phone));
+}
+
+export function getSellerPhoneForOrderSharing(
+  profile: Pick<SellerPublicContactProfile, "phone" | "whatsapp" | "whatsappLink" | "whatsappPublic">,
+) {
+  return normalizeSellerPhone(profile.phone) ?? getLegacyWhatsappPhone(profile);
+}
+
 export function getSellerPublicContact(profile: SellerPublicContactProfile) {
-  const details = normalizeRequiredSellerContact(profile);
+  const legacyWhatsappPhone = getLegacyWhatsappPhone(profile);
+  const phone = profile.phonePublic
+    ? normalizeSellerPhone(profile.phone) ?? legacyWhatsappPhone
+    : legacyWhatsappPhone;
+  const details = normalizeRequiredSellerContact({ ...profile, phone });
   if (
     !profile.publicContactConsentAt ||
-    !profile.phonePublic ||
     !profile.emailPublic ||
     !details
   ) {
@@ -182,17 +188,10 @@ export function getSellerPublicContact(profile: SellerPublicContactProfile) {
     profile.exactLocationPublic && profile.exactLocationConsentAt
       ? normalizeSellerExactLocation(profile.exactLocation)
       : null;
-  const whatsappPhone = profile.whatsappPublic
-    ? normalizeSellerPhone(profile.whatsapp) ?? normalizeSellerPhone(profile.phone)
-    : null;
-  const whatsappUrl = profile.whatsappPublic
-    ? normalizeSellerWhatsappLink(profile.whatsappLink) ??
-      (whatsappPhone ? `https://wa.me/${whatsappPhone}` : null)
-    : null;
   return {
     ...details,
     municipality: profile.municipality,
     exactLocation,
-    whatsappUrl,
+    whatsappUrl: `https://wa.me/${details.phone}`,
   };
 }

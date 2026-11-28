@@ -29,7 +29,7 @@ export async function saveExternalPayment(delivery: OrderDeliveryDetails, _previ
     revalidatePath("/mi-cuenta/pedidos");
     return { ok: true, message: "Retiramos las instrucciones de pago." };
   }
-  if (!order.sellerContact) return { message: "Comparte primero un WhatsApp para atender dudas sobre el pago." };
+  if (!order.sellerContact) return { message: "Comparte primero tu teléfono de contacto con el comprador para atender dudas sobre el pago." };
   const method = form.get("method");
   if (method !== "TRANSFER" && method !== "ON_DELIVERY" && method !== "WOMPI") {
     return { message: "Elige cómo se acordó pagar." };

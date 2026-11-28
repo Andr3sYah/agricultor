@@ -108,6 +108,20 @@ describe(
           publicContactConsentAt: new Date(),
         },
       });
+      await database.sellerProfile.create({
+        data: {
+          ownerId: incompleteProducer.userId,
+          name: "Vendedor sin teléfono",
+          description: "Perfil que no puede publicar sin un teléfono válido.",
+          municipality: "Local",
+          neighborhood: "El Porvenir",
+          phone: null,
+          phonePublic: false,
+          email: "sin-telefono@example.test",
+          emailPublic: true,
+          publicContactConsentAt: new Date(),
+        },
+      });
     });
 
     after(async () => {
@@ -163,7 +177,7 @@ describe(
       assert.ok(negotiableProduct.availableQuantity.equals("4"));
     });
 
-    it("does not create an offer when the seller profile or stock is incomplete", async () => {
+    it("does not create an offer without a valid public contact phone or stock", async () => {
       const beforeCount = await database.product.count({
         where: { ownerId: incompleteProducer.userId },
       });

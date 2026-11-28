@@ -262,7 +262,7 @@ export default async function OrdersPage({
   const [contacts, deliveries, receipts, paymentReceipts, paymentEvents] = await Promise.all([
     contactsAvailable ? prisma.orderSellerContact.findMany({
       where: { orderId: { in: acceptedOrderIds } },
-      select: { orderId: true, whatsapp: true },
+      select: { orderId: true, phone: true },
     }) : [],
     deliveryAvailable && confirmationAvailable ? prisma.$queryRaw<(OrderDeliveryDetails & { confirmed: boolean; paymentMethod: string | null; wompiUrl: string | null })[]>`
       SELECT d.*, c."orderId" IS NOT NULL AS confirmed,
@@ -303,7 +303,7 @@ export default async function OrdersPage({
   }
   const deliveryByOrder = new Map(deliveries.map((delivery) => [delivery.orderId, delivery]));
   const receiptByOrder = new Map(receipts.map((receipt) => [receipt.orderId, receipt]));
-  const contactByOrder = new Map(contacts.map(({ orderId, whatsapp }) => [orderId, whatsapp]));
+  const contactByOrder = new Map(contacts.map(({ orderId, phone }) => [orderId, phone]));
   function getPageHref(
     parameter: string,
     page: number,
@@ -389,7 +389,7 @@ export default async function OrdersPage({
     const quantity = `${quantityFormatter.format(order.requestedQuantity.toNumber())} ${unit}`;
     const unitPrice = copFormatter.format(order.priceCOP);
     const requestedAt = dateFormatter.format(order.createdAt);
-    const whatsapp = contactByOrder.get(order.id);
+    const phone = contactByOrder.get(order.id);
     const delivery = deliveryByOrder.get(order.id);
     const paymentReceipt = paymentReceiptByOrder.get(order.id);
     const paymentEventsForOrder = paymentEventsByOrder.get(order.id) ?? [];
@@ -629,18 +629,18 @@ export default async function OrdersPage({
           </section>
         ) : paymentAvailable && delivery && confirmed && order.status === "ACCEPTED" && (
           <>
-            {payment && whatsapp && (
+            {payment && phone && (
               <section className="mt-4 space-y-2 rounded-xl bg-slate-50 p-4" aria-label="Forma de pago acordada">
                 <TrackingHeading className="font-semibold">Forma de pago acordada</TrackingHeading>
                 <p>{paymentLabels[payment.method as keyof typeof paymentLabels]}</p>
-                {payment.method === "TRANSFER" && <p>Acuerda los datos de la transferencia con el vendedor por WhatsApp.</p>}
+                {payment.method === "TRANSFER" && <p>Acuerda los datos de la transferencia con el vendedor por su teléfono de contacto.</p>}
                 {payment.method === "ON_DELIVERY" && <p>Paga al vendedor al recibir o recoger el pedido.</p>}
                 {!producerView && payment.wompiUrl && (
                   <a className="inline-flex min-h-11 items-center rounded-lg bg-emerald-800 px-3 font-semibold text-white" href={payment.wompiUrl} rel="noreferrer" target="_blank">
                     Pagar en Wompi
                   </a>
                 )}
-                <p className="text-sm text-slate-700">El vendedor recibe el pago. Para dudas sobre el cobro o devoluciones, contacta al vendedor por WhatsApp. Agricultor no confirma el abono.</p>
+                <p className="text-sm text-slate-700">El vendedor recibe el pago. Para dudas sobre el cobro o devoluciones, contacta al vendedor por su teléfono de contacto. Agricultor no confirma el abono.</p>
                 {paymentReceiptAvailable && (
                   <p className="text-sm font-semibold text-slate-700">Pendiente de confirmación del vendedor. Si ya pagaste, consulta al vendedor antes de pagar otra vez.</p>
                 )}
@@ -649,21 +649,26 @@ export default async function OrdersPage({
                 )}
               </section>
             )}
-            {producerView && (whatsapp || payment ? <ExternalPaymentForm delivery={delivery} payment={payment} /> : (
-              <p className="mt-3 text-sm text-slate-700">Comparte tu WhatsApp para indicar la forma de pago.</p>
+            {producerView && (phone || payment ? <ExternalPaymentForm delivery={delivery} payment={payment} /> : (
+              <p className="mt-3 text-sm text-slate-700">Comparte tu teléfono de contacto para indicar la forma de pago.</p>
             ))}
           </>
         )}
         {contactsAvailable && order.status === "ACCEPTED" && (
-          producerView ? <OrderSellerContactForm orderId={order.id} whatsapp={whatsapp} /> : whatsapp && (
-            <a
-              className="mt-4 inline-flex min-h-12 items-center rounded-xl bg-emerald-800 px-4 font-semibold text-white hover:bg-emerald-900"
-              href={`https://wa.me/${whatsapp}?${new URLSearchParams({ text: `Hola, quiero coordinar la entrega de mi pedido de Agricultor. Referencia: ${order.id}` })}`}
-              rel="noreferrer"
-              target="_blank"
-            >
-              Hablar con el vendedor por WhatsApp
-            </a>
+          producerView ? <OrderSellerContactForm orderId={order.id} phoneShared={Boolean(phone)} /> : phone && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a className="inline-flex min-h-12 items-center rounded-xl bg-emerald-800 px-4 font-semibold text-white hover:bg-emerald-900" href={`tel:+${phone}`}>
+                Llamar al vendedor
+              </a>
+              <a
+                className="inline-flex min-h-12 items-center rounded-xl border border-emerald-900 px-4 font-semibold text-emerald-950 hover:bg-emerald-50"
+                href={`https://wa.me/${phone}?${new URLSearchParams({ text: `Hola, quiero coordinar la entrega de mi pedido de Agricultor. Referencia: ${order.id}` })}`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Escribir por WhatsApp
+              </a>
+            </div>
           )
         )}
         {producerView && order.status === "PENDING" && (

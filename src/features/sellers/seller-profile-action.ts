@@ -10,7 +10,6 @@ import {
   isSellerProfileAvailable,
   normalizeSellerExactLocation,
   normalizeRequiredSellerContact,
-  normalizeSellerWhatsappChoice,
 } from "./seller-profile";
 
 type ProfileState = { message: string; ok?: boolean };
@@ -38,17 +37,9 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
     neighborhood: form.get("neighborhood"),
   });
   if (!contact) {
-    return { message: "Completa un celular, un correo válidos y un barrio o vereda aproximados, sin dirección exacta." };
+    return { message: "Completa un teléfono de contacto y un correo válidos, además de un barrio o vereda aproximados, sin dirección exacta." };
   }
   const { phone, email, neighborhood } = contact;
-  const whatsappChoice = normalizeSellerWhatsappChoice(
-    form.get("whatsappMode"),
-    form.get("whatsapp"),
-    form.get("whatsappLink"),
-  );
-  if (!whatsappChoice) {
-    return { message: "Revisa el número o el enlace de WhatsApp elegido." };
-  }
   const rawExactLocation = form.get("exactLocation");
   const exactLocation = normalizeSellerExactLocation(rawExactLocation);
   const publishExactLocation =
@@ -69,7 +60,6 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
   const publishContacts = form.get("publishContacts") === "on";
   const published = form.get("published") === "on" && publishContacts;
   const visibility = getSellerContactVisibility(form, {
-    ...whatsappChoice,
     phone,
     email,
   });
@@ -81,7 +71,6 @@ export async function saveSellerProfile(_previous: ProfileState, form: FormData)
     exactLocationPublic,
     exactLocationConsentAt:
       exactLocationPublic ? new Date() : null,
-    ...whatsappChoice,
     ...visibility,
     phone,
     email,
