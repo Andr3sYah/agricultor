@@ -321,12 +321,13 @@ async function main(): Promise<void> {
       data: { userId: producer.id, role: "PRODUCER" },
     });
 
-    const municipality = `Municipio E2E ${suffix}`;
+    const municipality = "Medellín";
     await database.sellerProfile.create({
       data: {
         ownerId: producer.id,
         name: "Productor de prueba E2E",
         description: "Perfil público para las ofertas del catálogo E2E.",
+        department: "Antioquia",
         municipality,
         neighborhood: "El Porvenir",
         published: true,
@@ -362,7 +363,7 @@ async function main(): Promise<void> {
       data: Array.from({ length: 12 }, (_, index) => ({
         ...catalogProduct,
         id: `${suffix}-${index}`,
-        name: `Oferta E2E ${index}`,
+        name: `Oferta E2E ${index} ${suffix}`,
         priceCOP: index === 11 ? 1450 : catalogProduct.priceCOP,
       })),
     });
@@ -541,7 +542,7 @@ async function main(): Promise<void> {
       const anonymousContext = await browser.newContext();
       const anonymousPage = await anonymousContext.newPage();
       const catalogQuery = new URLSearchParams({
-        producto: "e2e",
+        producto: suffix,
         categoria: "OTHER",
         municipio: municipality,
       });
