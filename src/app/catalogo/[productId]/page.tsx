@@ -141,6 +141,7 @@ export default async function PublicProductPage({
     select: {
       id: true,
       name: true,
+      department: true,
       municipality: true,
       neighborhood: true,
       exactLocation: true,

@@ -156,10 +156,14 @@ campos de contacto y sus permisos de visibilidad requieren la
 migración `20261125193000_seller_profile_contact_opt_in`; son privados por
 defecto. La migración `20261127100000_public_seller_contacts` agrega el barrio
 aproximado y el registro de aceptación explícita para publicar teléfono y correo.
-No completa datos de vendedores existentes y retira del catálogo las ofertas ya
-publicadas hasta que cada vendedor complete y acepte estos datos; después debe
-volver a publicar sus ofertas. Los datos de contacto que anteriormente se
-mantuvieron privados no se prellenan ni se publican automáticamente.
+La migración `20261127150000_seller_profile_department` agrega el departamento
+sin sobrescribir los municipios existentes. La ubicación se elige de un catálogo
+local de departamentos y municipios; los municipios heredados se conservan y se
+precargan cuando se pueden asociar sin ambigüedad. La venta pide completar
+ubicación y contacto antes de mostrar el formulario de oferta. El borrador del
+producto se conserva en la sesión al volver de la configuración. Los datos de
+contacto que anteriormente se mantuvieron privados no se prellenan ni se
+publican automáticamente.
 
 La opción de compartir el teléfono de contacto con el comprador de un pedido
 aceptado requiere aplicar en Neon la migración
@@ -194,15 +198,16 @@ variables de entorno nuevas para los métodos actuales.
 
 Los productores administran sus productos y pueden publicarlos explícitamente.
 El catálogo público conserva visibles las ofertas publicadas con inventario
-disponible o reservado que tengan contacto y ubicación aproximada confirmados;
+disponible o reservado que tengan contacto aceptado y departamento y municipio
+válidos;
 si todo está reservado, no se aceptan nuevas solicitudes. En cada oferta se
-muestran un teléfono de contacto, correo y barrio/vereda y municipio, solo
-después de la aceptación explícita del productor. El teléfono se usa para
+muestran teléfono, correo, municipio y departamento después de la aceptación
+explícita del productor; barrio/vereda es opcional. El teléfono se usa para
 llamadas y WhatsApp. Una ubicación exacta es opcional, queda privada por defecto
-y solo se publica con una aceptación independiente e informada; requiere la migración
-`20261127113000_seller_exact_location_opt_in`. Sin esa aceptación se muestra
-solo el barrio/vereda y municipio. La ubicación de entrega de cada pedido es
-independiente y permanece privada para comprador y vendedor autorizados.
+y solo se publica con una aceptación independiente e informada; requiere la
+migración `20261127113000_seller_exact_location_opt_in`. La ubicación de entrega
+de cada pedido es independiente y permanece privada para comprador y vendedor
+autorizados.
 Categorías, unidades y precio por unidad en pesos enteros COP siguen siendo
 hipótesis provisionales descritas en `PLAN.md`.
 

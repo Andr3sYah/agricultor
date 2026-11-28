@@ -16,8 +16,8 @@ export function SellerPublicContact({
       <p className="font-semibold">Contacto del vendedor</p>
       <p className="mt-1 text-sm text-foreground/75">
         {contact.exactLocation
-          ? <>Ubicación exacta: {contact.exactLocation}, {contact.municipality}</>
-          : <>Ubicación aproximada: {contact.neighborhood}, {contact.municipality}</>}
+          ? <>Ubicación exacta: {contact.exactLocation}, {contact.municipality}{contact.department ? `, ${contact.department}` : ""}</>
+          : <>Ubicación aproximada: {contact.neighborhood ? `${contact.neighborhood}, ` : ""}{contact.municipality}{contact.department ? `, ${contact.department}` : ""}</>}
       </p>
       {negotiating && (
         <p className="mt-2 text-sm text-foreground/75">

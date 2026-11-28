@@ -91,6 +91,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         select: {
           sellerProfile: {
             select: {
+              department: true,
               municipality: true,
               neighborhood: true,
               exactLocation: true,

@@ -3,6 +3,7 @@ import {
   getPublicSellerOfferCondition,
   PUBLIC_SELLER_CONTACT_CONDITION,
 } from "@/features/sellers/seller-contact";
+import { resolveColombianLocation } from "@/features/sellers/colombian-location";
 import { canManageProducts, type ProductActor } from "./product-access";
 import type { ProductInput } from "./product-validation";
 
@@ -31,17 +32,25 @@ export async function createProducerProduct(
 
   return database.$transaction(
     async (transaction) => {
+      let municipality = input.municipality;
       if (publish) {
         const sellerProfile = await transaction.sellerProfile.findFirst({
           where: {
             ownerId: actor.userId,
             ...PUBLIC_SELLER_CONTACT_CONDITION,
           },
-          select: { id: true },
+          select: { id: true, department: true, municipality: true },
         });
-        if (!sellerProfile) {
+        const location = sellerProfile
+          ? resolveColombianLocation(
+              sellerProfile.department,
+              sellerProfile.municipality,
+            )
+          : null;
+        if (!sellerProfile || !location) {
           return { ok: false, code: "seller-profile-incomplete" } as const;
         }
+        municipality = location.municipality;
       }
 
       const product = await transaction.product.create({
@@ -56,7 +65,7 @@ export async function createProducerProduct(
           ...(input.pricingType === "NEGOTIABLE"
             ? { priceReferenceEnabled: false, priceReferenceConsentAt: null }
             : {}),
-          municipality: input.municipality,
+          municipality,
           isPublished: publish,
         },
         select: { id: true },
@@ -88,17 +97,25 @@ export async function setProducerProductPublication(
         return { ok: false, code: "unavailable" } as const;
       }
 
+      let municipality: string | null = null;
       if (publish) {
         const sellerProfile = await transaction.sellerProfile.findFirst({
           where: {
             ownerId: actor.userId,
             ...PUBLIC_SELLER_CONTACT_CONDITION,
           },
-          select: { id: true },
+          select: { id: true, department: true, municipality: true },
         });
-        if (!sellerProfile) {
+        const location = sellerProfile
+          ? resolveColombianLocation(
+            sellerProfile.department,
+            sellerProfile.municipality,
+          )
+          : null;
+        if (!sellerProfile || !location) {
           return { ok: false, code: "seller-profile-incomplete" } as const;
         }
+        municipality = location.municipality;
       }
 
       const updated = await transaction.product.updateMany({
@@ -112,7 +129,10 @@ export async function setProducerProductPublication(
               }
             : {}),
         },
-        data: { isPublished: publish },
+        data: {
+          isPublished: publish,
+          ...(municipality ? { municipality } : {}),
+        },
       });
 
       return updated.count === 1

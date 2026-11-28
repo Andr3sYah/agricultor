@@ -1,4 +1,7 @@
 import { prisma } from "@/lib/db";
+import { resolveColombianLocation } from "./colombian-location";
+
+import { getSellerPublicContact } from "./seller-contact";
 
 export {
   getPublicSellerOfferCondition,
@@ -15,6 +18,18 @@ export {
   PUBLIC_SELLER_CONTACT_CONDITION,
 } from "./seller-contact";
 export type { SellerPublicContactProfile } from "./seller-contact";
+
+export function isSellerProfileCompleteForSales(
+  profile: Parameters<typeof getSellerPublicContact>[0] & {
+    department?: string | null;
+  } | null,
+) {
+  return Boolean(
+    profile &&
+      resolveColombianLocation(profile.department, profile.municipality) &&
+      getSellerPublicContact(profile),
+  );
+}
 
 export async function isSellerProfileAvailable() {
   const [schema] = await prisma.$queryRaw<{ available: boolean }[]>`

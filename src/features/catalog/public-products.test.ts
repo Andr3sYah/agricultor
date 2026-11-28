@@ -235,7 +235,7 @@ describe("public catalog query and pagination", () => {
         is: {
           sellerProfile: {
             is: {
-              neighborhood: { not: null },
+              department: { not: null },
               publicContactConsentAt: { not: null },
               email: { not: null },
               emailPublic: true,

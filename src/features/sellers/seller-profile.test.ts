@@ -2,13 +2,21 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import type { SellerProfile } from "@/generated/prisma/client";
 import { SellerPublicContact } from "./seller-public-contact";
 import { SellerProfileForm } from "./seller-profile-form";
+import { ProductForm } from "@/features/products/product-form";
+import {
+  inferColombianLocation,
+  resolveColombianLocation,
+  selectColombianDepartment,
+} from "./colombian-location";
 import {
   getSellerContactVisibility,
   getSellerExactLocationVisibility,
   getSellerPhoneForOrderSharing,
   getSellerPublicContact,
+  isSellerProfileCompleteForSales,
   normalizeRequiredSellerContact,
   normalizeSellerEmail,
   normalizeSellerExactLocation,
@@ -63,7 +71,7 @@ describe("seller profile contact opt-in normalization", () => {
     assert.equal(normalizeSellerEmail(""), null);
   });
 
-  it("requires a valid contact phone, email, and approximate neighborhood together", () => {
+  it("requires a valid phone and email, and validates an optional neighborhood", () => {
     assert.deepEqual(normalizeRequiredSellerContact({
       phone: "3001234567",
       email: " ventas@example.com ",
@@ -76,10 +84,17 @@ describe("seller profile contact opt-in normalization", () => {
     for (const input of [
       { phone: "", email: "ventas@example.com", neighborhood: "El Porvenir" },
       { phone: "3001234567", email: "", neighborhood: "El Porvenir" },
-      { phone: "3001234567", email: "ventas@example.com", neighborhood: "" },
     ]) {
       assert.equal(normalizeRequiredSellerContact(input), null);
     }
+    assert.deepEqual(normalizeRequiredSellerContact({
+      phone: "3001234567",
+      email: "ventas@example.com",
+    }), {
+      phone: "573001234567",
+      email: "ventas@example.com",
+      neighborhood: null,
+    });
   });
 
   it("rejects street-style addresses as a neighborhood", () => {
@@ -195,6 +210,7 @@ describe("seller profile contact opt-in normalization", () => {
       phone: "573001234567",
       email: "private@example.test",
       neighborhood: "El Porvenir",
+      department: null,
       municipality: "La Vega",
       exactLocation: null,
       whatsappUrl: "https://wa.me/573001234567",
@@ -225,6 +241,7 @@ describe("seller profile contact opt-in normalization", () => {
       createElement(SellerPublicContact, {
         negotiating: true,
         profile: {
+          department: "Cundinamarca",
           municipality: "La Vega",
           neighborhood: "El Porvenir",
           whatsapp: "573001234567",
@@ -244,7 +261,7 @@ describe("seller profile contact opt-in normalization", () => {
     assert.match(markup, /href="tel:\+573011234567"/);
     assert.match(markup, /href="mailto:ventas@example\.test"/);
     assert.match(markup, /Teléfono de contacto: \+57 3011234567/);
-    assert.match(markup, /El Porvenir, La Vega/);
+    assert.match(markup, /El Porvenir, La Vega, Cundinamarca/);
     assert.doesNotMatch(markup, /dirección exacta/i);
     assert.doesNotMatch(markup, /573001234567/);
   });
@@ -260,6 +277,135 @@ describe("seller profile contact opt-in normalization", () => {
     assert.equal(markup.match(/type="tel"/g)?.length, 1);
     assert.doesNotMatch(markup, /whatsappMode|whatsappLink|whatsappPublic|type="url"/);
     assert.doesNotMatch(markup, /wa\.me|api\.whatsapp\.com/);
+  });
+
+  it("uses a bundled department/municipality catalog and rejects mismatched pairs", () => {
+    assert.deepEqual(
+      resolveColombianLocation("antioquia", "medellin"),
+      { department: "Antioquia", municipality: "Medellín" },
+    );
+    assert.equal(resolveColombianLocation("Antioquia", "Cali"), null);
+    assert.equal(inferColombianLocation("Leticia")?.department, "Amazonas");
+    assert.equal(inferColombianLocation("Municipio heredado"), null);
+  });
+
+  it("clears the previous municipality when the department changes", () => {
+    assert.deepEqual(selectColombianDepartment("Cundinamarca"), {
+      department: "Cundinamarca",
+      municipality: "",
+    });
+  });
+
+  it("renders dependent location selects and keeps an old location visible for migration", () => {
+    const profile: SellerProfile = {
+      id: "seller",
+      ownerId: "owner",
+      name: "Productor",
+      description: "Productos locales",
+      department: "Antioquia",
+      municipality: "Medellín",
+      neighborhood: null,
+      exactLocation: null,
+      exactLocationPublic: false,
+      exactLocationConsentAt: null,
+      published: false,
+      whatsapp: null,
+      whatsappLink: null,
+      whatsappPublic: false,
+      phone: null,
+      phonePublic: false,
+      email: null,
+      emailPublic: false,
+      publicContactConsentAt: null,
+    };
+    const markup = renderToStaticMarkup(
+      createElement(SellerProfileForm, { profile }),
+    );
+    assert.match(markup, /name="department"/);
+    assert.match(markup, /name="municipality"/);
+    assert.match(markup, /<option value="Medellín" selected="">Medellín<\/option>/);
+    assert.doesNotMatch(markup, /name="municipality"[^>]*type="text"/);
+    const legacyMarkup = renderToStaticMarkup(
+      createElement(SellerProfileForm, {
+        profile: { ...profile, department: null, municipality: "Municipio legado" },
+      }),
+    );
+    assert.match(legacyMarkup, /Conservamos tu ubicación anterior \(Municipio legado\)/);
+    const mappedLegacyMarkup = renderToStaticMarkup(
+      createElement(SellerProfileForm, {
+        profile: { ...profile, department: null, municipality: "Leticia" },
+      }),
+    );
+    assert.match(mappedLegacyMarkup, /<option value="Amazonas" selected="">Amazonas<\/option>/);
+    assert.match(mappedLegacyMarkup, /<option value="Leticia" selected="">Leticia<\/option>/);
+  });
+
+  it("gates selling on a valid location and publicly shared contact, not a neighborhood", () => {
+    const completeProfile = {
+      department: "Antioquia",
+      municipality: "Medellín",
+      neighborhood: null,
+      phone: "573001234567",
+      phonePublic: true,
+      email: "ventas@example.com",
+      emailPublic: true,
+      publicContactConsentAt: new Date("2026-11-27T00:00:00.000Z"),
+    };
+    assert.equal(isSellerProfileCompleteForSales(null), false);
+    assert.equal(isSellerProfileCompleteForSales(completeProfile), true);
+    assert.equal(
+      isSellerProfileCompleteForSales({
+        ...completeProfile,
+        department: "Cundinamarca",
+      }),
+      false,
+    );
+    assert.equal(
+      isSellerProfileCompleteForSales({
+        ...completeProfile,
+        publicContactConsentAt: null,
+      }),
+      false,
+    );
+    assert.equal(
+      isSellerProfileCompleteForSales({
+        ...completeProfile,
+        emailPublic: false,
+      }),
+      false,
+    );
+    assert.equal(
+      isSellerProfileCompleteForSales({
+        ...completeProfile,
+        department: null,
+        municipality: "Leticia",
+      }),
+      false,
+    );
+  });
+
+  it("hides the sale action until setup and uses the profile location without asking twice", () => {
+    const inventoryForm = renderToStaticMarkup(
+      createElement(ProductForm, {
+        allowSell: false,
+        sellerMunicipality: "",
+      }),
+    );
+    assert.match(inventoryForm, /Guardar en inventario/);
+    assert.doesNotMatch(inventoryForm, /Vender producto/);
+
+    const saleForm = renderToStaticMarkup(
+      createElement(ProductForm, {
+        allowSell: true,
+        sellerMunicipality: "Medellín",
+      }),
+    );
+    assert.match(saleForm, /Vender producto/);
+    assert.ok(
+      saleForm.includes('name="municipality"') &&
+        saleForm.includes('value="Medellín"'),
+    );
+    assert.doesNotMatch(saleForm, /Municipio o localidad/);
   });
 
   it("keeps legacy WhatsApp-only profiles usable only with consent", () => {

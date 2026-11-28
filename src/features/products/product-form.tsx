@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { createProduct, updateProduct, type ProductFormState } from "./product-actions";
+import { readProductDraft, writeProductDraft } from "./product-draft";
 import { ProductPhotoUploader } from "./product-photo-uploader";
 import { PRODUCT_CATEGORIES, PRODUCT_UNITS } from "./product-validation";
 
@@ -23,23 +24,84 @@ const initialState: ProductFormState = {};
 type ProductFormProps = {
   product?: ProductFormValues;
   unitLocked?: boolean;
+  allowSell?: boolean;
+  sellerMunicipality?: string;
+  sellerDepartment?: string;
+  draftStorageKey?: string;
 };
 
-export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
+export function ProductForm({
+  product,
+  unitLocked = false,
+  allowSell = false,
+  sellerMunicipality = "",
+  sellerDepartment = "",
+  draftStorageKey = "",
+}: ProductFormProps) {
   const [state, action, pending] = useActionState(
     product ? updateProduct : createProduct,
     initialState,
   );
+  const formRef = useRef<HTMLFormElement>(null);
   const [selectedPricingType, setSelectedPricingType] = useState(
     product?.pricingType ?? "FIXED",
   );
   const editing = Boolean(product);
   const values = state.values ?? product;
   const pricingType = selectedPricingType;
+  const storageKey = draftStorageKey
+    ? `agricultor:product-draft:${draftStorageKey}`
+    : "";
+
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form || editing || !storageKey) return;
+
+    const draft = readProductDraft(sessionStorage, storageKey);
+    if (draft) {
+      for (const [field, value] of Object.entries(draft)) {
+        if (field === "municipality" && sellerMunicipality) continue;
+        if (field === "pricingType") {
+          if (value === "FIXED" || value === "NEGOTIABLE") {
+            const radio = form.querySelector<HTMLInputElement>(
+              `input[name="pricingType"][value="${value}"]`,
+            );
+            if (radio && !radio.checked) radio.click();
+          }
+          continue;
+        }
+        const input = form.elements.namedItem(field);
+        if (
+          input instanceof HTMLInputElement ||
+          input instanceof HTMLSelectElement
+        ) {
+          input.value = value;
+        }
+      }
+    }
+
+    const saveDraft = () => {
+      writeProductDraft(sessionStorage, storageKey, new FormData(form));
+    };
+    form.addEventListener("input", saveDraft);
+    form.addEventListener("change", saveDraft);
+    form.addEventListener("submit", saveDraft);
+    return () => {
+      form.removeEventListener("input", saveDraft);
+      form.removeEventListener("change", saveDraft);
+      form.removeEventListener("submit", saveDraft);
+    };
+  }, [editing, sellerMunicipality, storageKey]);
+
+  useEffect(() => {
+    if (state.createdProductId && storageKey) {
+      sessionStorage.removeItem(storageKey);
+    }
+  }, [state.createdProductId, storageKey]);
 
   return (
     <>
-    <form action={action} className="mt-6 space-y-5" id="formulario-producto">
+    <form action={action} className="mt-6 space-y-5" id="formulario-producto" ref={formRef}>
       {product?.id && <input name="productId" type="hidden" value={product.id} />}
       <div>
         <label className="block text-sm font-medium" htmlFor="name">
@@ -229,7 +291,21 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
           )}
         </div>
       )}
-      <div>
+      {sellerMunicipality && !editing ? (
+        <div>
+          <p className="text-sm font-medium">Ubicación de tus ofertas</p>
+          <p className="mt-1 text-slate-700">
+            {sellerMunicipality}{sellerDepartment ? `, ${sellerDepartment}` : ""}
+          </p>
+          <input name="municipality" type="hidden" value={sellerMunicipality} />
+        </div>
+      ) : product ? (
+        <div>
+          <p className="text-sm font-medium">Municipio del producto</p>
+          <p className="mt-1 text-slate-700">{product.municipality}</p>
+          <input name="municipality" type="hidden" value={product.municipality} />
+        </div>
+      ) : <div>
         <label className="block text-sm font-medium" htmlFor="municipality">
           Municipio o localidad
         </label>
@@ -251,11 +327,11 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
             {state.fieldErrors.municipality}
           </p>
         )}
-      </div>
+      </div>}
       <p className="text-sm text-slate-600">
-        Guarda en inventario para llevar el control en privado, o elige «Vender
-        producto» para guardar y publicar la oferta en un solo paso. Para vender
-        necesitas existencias y un perfil de vendedor listo para compartir contacto.
+        {allowSell
+          ? <>Guarda en inventario para llevar el control en privado, o elige «Vender producto» para guardar y publicar la oferta en un solo paso. Para vender necesitas existencias.</>
+          : "Guarda en inventario para llevar el control en privado. Completa tus datos de vendedor antes de publicar una oferta."}
       </p>
       <p className="text-xs text-slate-500">
         Foto (opcional): puedes agregarla después de publicar; vender no depende de ella.
@@ -284,13 +360,17 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
             : "Ir al producto guardado en inventario"}
         </a>
       )}
-      {state.sellerProfileRequired && (
-        <a
-          className="inline-flex min-h-12 items-center font-semibold text-emerald-900 underline"
-          href="/mi-cuenta/perfil-vendedor"
-        >
-          Completar perfil de vendedor
-        </a>
+      {!editing && !allowSell && (
+        <p className="text-sm text-slate-700">
+          Para vender, primero{" "}
+          <a
+            className="font-semibold text-emerald-900 underline"
+            href={`/mi-cuenta/perfil-vendedor?returnTo=${encodeURIComponent("/mi-cuenta/productos?intent=sell")}`}
+          >
+            completa tus datos de vendedor
+          </a>
+          .
+        </p>
       )}
       {editing ? (
         <button
@@ -301,7 +381,7 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
           {pending ? "Guardando..." : "Guardar cambios"}
         </button>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className={allowSell ? "grid gap-3 sm:grid-cols-2" : ""}>
           <button
             className="min-h-12 rounded-xl border border-emerald-900 px-5 py-3 font-semibold text-emerald-950 hover:bg-emerald-50 disabled:opacity-60"
             disabled={pending}
@@ -311,15 +391,17 @@ export function ProductForm({ product, unitLocked = false }: ProductFormProps) {
           >
             {pending ? "Guardando..." : "Guardar en inventario"}
           </button>
-          <button
-            className="min-h-12 rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 disabled:opacity-60"
-            disabled={pending}
-            name="intent"
-            type="submit"
-            value="sell"
-          >
-            {pending ? "Publicando..." : "Vender producto"}
-          </button>
+          {allowSell && (
+            <button
+              className="min-h-12 rounded-xl bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900 disabled:opacity-60"
+              disabled={pending}
+              name="intent"
+              type="submit"
+              value="sell"
+            >
+              {pending ? "Publicando..." : "Vender producto"}
+            </button>
+          )}
         </div>
       )}
     </form>
