@@ -658,7 +658,9 @@ async function main(): Promise<void> {
       });
       await resetFilters.click();
       await anonymousPage.waitForURL(`${baseURL}/catalogo`);
-      await expect(anonymousPage.getByLabel("Categoría")).toHaveValue("");
+      await expect(
+        anonymousPage.getByLabel("Categoría", { exact: true }),
+      ).toHaveValue("");
       await expect(anonymousPage.getByLabel("Nombre del producto")).toHaveValue("");
       await expect(anonymousPage.getByLabel("Municipio")).toHaveValue("");
       await expect(anonymousPage.getByLabel("Ordenar por")).toHaveValue("");
